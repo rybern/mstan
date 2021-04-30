@@ -1,4 +1,6 @@
 {-# LANGUAGE EmptyDataDeriving #-}
+module Mockup where
+
 import           Data.Set                       ( Set )
 import qualified Data.Set                      as Set
 import           Data.Map                       ( Map )
@@ -9,16 +11,20 @@ import           Data.List
 type Symbol = String
 
 -- Stan-ish types
-data Type
-data Expr
-data Code deriving (Eq, Ord)
-data Param deriving (Eq, Ord)
+newtype Type = Type String deriving (Eq, Ord)
+newtype Expr = Expr String deriving (Eq, Ord)
+data Code = Code {
+    moduleReferences :: Set (InstanceName, Reference)
+  , moduleInstances :: Set (SigName, Maybe InstanceName, [Expr])
+  }
+  deriving (Eq, Ord)
+data Param = Param String deriving (Eq, Ord)
 
 -- Module system types
 type SigName = Symbol
 type ImplName = Symbol
 type InstanceName = Symbol
-data Reference deriving (Eq, Ord)
+data Reference = Reference String deriving (Eq, Ord)
 
 -- Program types
 
@@ -32,12 +38,12 @@ data ModularProgram = ModularProgram {
   }
 
 data ModuleImplementation = ModuleImplementation {
-  -- explicit list of args
-    implBody :: [Expr] -> Code
+    implBody :: Code
+  , implArgs :: [Symbol]
   , implSignature :: SigName
   , implParams :: Set Param
   , implName :: ImplName
-  }
+  } deriving (Eq, Ord)
 
 data ConcreteProgram = ConcreteProgram {
     concreteBody :: Code
@@ -83,13 +89,11 @@ selectImplementations
     :: Map SigName ModuleImplementation
     -> Set ModuleImplementation
     -> (Map SigName ([Expr] -> Code), Set Param)
-selectImplementations =
-  undefined
+selectImplementations = undefined
 
 instanceInitializers
     :: Map SigName ([Expr] -> Code) -> Code -> Map InstanceName Code
-instanceInitializers sigImpls code =
-  undefined inits
+instanceInitializers sigImpls code = undefined inits
     where inits = moduleInstances code
 
 applyModuleReferences :: Map SigName ([Expr] -> Code) -> Code -> Code
@@ -105,19 +109,18 @@ applyModuleReferences sigImpls code = Set.fold applyReference
         )
         references
 
-moduleReferences :: Code -> Set (InstanceName, Reference)
-moduleReferences =
-  undefined
+-- moduleReferences :: Code -> Set (InstanceName, Reference)
+-- moduleReferences =
+--   undefined
 
-moduleInstances :: Code -> Set (SigName, InstanceName, [Expr])
-moduleInstances = undefined
+-- moduleInstances :: Code -> Set (SigName, InstanceName, [Expr])
+-- moduleInstances = undefined
 
 applyReference :: (Code, Reference) -> Code -> Code
 applyReference = undefined
 
 topologicallyOrderSignatures :: Map SigName ([Expr] -> Code) -> [SigName]
-topologicallyOrderSignatures =
-  undefined
+topologicallyOrderSignatures = undefined
 
 
 -- Nouns:
@@ -135,15 +138,51 @@ type ConcreteProgram' = ConcreteProgram
 -- Parameter set
 type ParameterSet = Set Param
 -- Module application
-type ModuleApplication = ModularProgram -> Map SigName ImplName -> ConcreteProgram
+type ModuleApplication
+    = ModularProgram -> Map SigName ImplName -> ConcreteProgram
 -- Module reference
 type ModuleReference = Reference
 -- Module selection
 type ModuleSelection = (SigName, ImplName)
 
-golf = ModularProgram {
-    signatures :: Set (Type, SigName) -- Constraints: Unique SigName
-  , implementations :: Set ModuleImplementation
-  , topBody :: Code
-  , topParams :: Set Param
-  }
+data Sig = Sig String deriving (Show, Eq, Ord)
+data Impl = Impl String deriving (Show, Eq, Ord)
+
+drawTreeLevel :: Int -> a -> (a -> String) -> IO ()
+drawTreeLevel level a showA = putStrLn $ (replicate level ' ') ++ showA a
+
+drawTree
+    :: (Ord a, Ord b)
+    => Int
+    -> a
+    -> Map a (Set b)
+    -> Map b (Set a)
+    -> (a -> String)
+    -> (b -> String)
+    -> IO ()
+drawTree level root next other showA showB = do
+    drawTreeLevel level root showA
+    let nexts = case Map.lookup root next of
+          Just nexts -> nexts
+          Nothing -> Set.empty
+    mapM_ (\n -> drawTree (level + 2) n other next showB showA) nexts
+
+drawModuleTree :: ModularProgram -> IO ()
+drawModuleTree p = drawTree 0 (Impl "root") sigs sigImpls (\(Impl a) -> "[" ++ a ++ "]") (\(Sig a) -> "{" ++ a ++ "}")
+  where
+    codeSigs = Set.map (\(sig, _, _) -> Sig sig) . moduleInstances
+    implSigs =
+        Map.fromList
+            . map (\impl -> (Impl $ implName impl, codeSigs (implBody impl)))
+            $ (Set.toList $ implementations p)
+    sigs = Map.insert (Impl "root") (codeSigs (topBody p)) implSigs
+    sigImpls =
+        Map.fromList
+            . map
+                  (\impls ->
+                      ( Sig $ implSignature (head impls)
+                      , Set.fromList $ map (Impl . implName) impls
+                      )
+                  )
+            $ groupBy (\x y -> implSignature x == implSignature y)
+                      (Set.toList $ implementations p)
