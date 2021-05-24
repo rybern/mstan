@@ -21,6 +21,8 @@ executable mockup
                        containers >= 0.6.2.1,
                        graphviz,
                        text >= 1.2.4.0,
-                       process
+                       process,
+                       attoparsec,
+                       text
 
 
