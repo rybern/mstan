@@ -1,0 +1,48 @@
+* Beats
+** Clicking on a node in model network
+** Changing the model, seeing it update
+** Selecting a model with the module graph
+** Questions
+*** What are your thoughts on the syntax?
+* Requirements
+** Responsive interface
+*** Update graphs
+*** Interact with graphs?
+* Interface Implementation
+** Web tech for clickable graphs
+** 1 Locally generate page from web server
+** 2 Compile everything to javascript and run directly
+** Graph tools
+*** Alchemy http://graphalchemist.github.io/Alchemy/#/docs
+    Feature rich, simple, up to date
+    Seems you can enable captions by default with "nodeCaptionsOnByDefault: false" in the config, which I can't find documentation for (discussed here https://github.com/GraphAlchemist/Alchemy/issues/390)
+*** Dracula graph library
+    https://www.graphdracula.net/showcase/
+    Javascript imperatively created but nice and simple
+*** https://github.com/mountainstorm/jquery.graphviz.svg/
+    Make graphviz output scrollable, zoomable, interactive
+    Looks old
+*** https://github.com/magjac/d3-graphviz
+    Nice, up-to-date visualization but no apparent interaction
+*** Ace for editing later?
+    https://gist.github.com/jrnold/6a2e3b565cf78d871ca0
+*** Highlight.js
+    You can't edit with it, and it seems weird to have that asymmetry
+** Plan
+*** html hello world
+*** html+javascript hello world
+*** haskell sockets
+*** html+javascript+sockets
+*** alchemy hello world
+*** graph panes
+* Interface
+** Left: Modular program
+** Center: Model or module graph
+** Right: Concrete program
+* TODO
+ * Figure out argument handling, whether you can inline etc (e.g. golf model)
+ * At minimum, use the graphviz tool for model graphs as well, so you can highlight the selected
+ * Ideally, also implement the cool highlighting like in the email
+ * Directed edges with numbered tags
+ * Golf demo with notes
+ * Comment save?

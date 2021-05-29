@@ -1,0 +1,16 @@
+(Locally-hosted) javascript visualization
+Two panels:
+ - Three tabs:
+   - Code
+   - Model graph
+   - Module graph
+ - Selected model and bookmarked models (and bookmark button)
+
+You can change selected model by:
+ - Clicking a node in the model graph
+ - Clicking sufficient node set in the module graph (can changed)
+
+Model graph view options:
+ - Show only neighbors
+ - Show only modules from [relevant signature dropdown menu]
+ - Fold neighbors that change the same signature
