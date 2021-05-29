@@ -24,19 +24,31 @@ selectModules program selectionNames = ConcreteProgram
     { concreteBody   = applyImplementations appliedSigImplementations
                                             (topBody program)
     , concreteParams = Set.union (topParams program) moduleParams
-    , concreteData = topData program
+    , concreteData   = topData program
     }
   where
     selections = Map.mapWithKey
         (\sigName' implName' ->
-           let found = (find
-                (\impl ->
-                    implName impl == implName' && implSignature impl == sigName'
-                )
-                (implementations program))
-           in case found of
-             Nothing -> error $ "Could not find implement \"" ++ Text.unpack implName' ++ "\" of signature \"" ++ Text.unpack sigName' ++ "\""
-             Just found -> found
+            let
+                found =
+                    (find
+                        (\impl ->
+                            implName impl
+                                == implName'
+                                && implSignature impl
+                                == sigName'
+                        )
+                        (implementations program)
+                    )
+            in  case found of
+                    Nothing ->
+                        error
+                            $  "Could not find implement \""
+                            ++ Text.unpack implName'
+                            ++ "\" of signature \""
+                            ++ Text.unpack sigName'
+                            ++ "\""
+                    Just found -> found
         )
         selectionNames
     moduleParams              = Set.unions (Map.map implParams selections)
@@ -91,15 +103,19 @@ applyImplementations sigImpls code = ConcreteCode $ Set.fold
 applyImplementation
     :: SigName -> [Expr] -> [Symbol] -> ConcreteCode -> Code -> Code
 applyImplementation sigName args argNames (ConcreteCode implBody) code = code
-    { codeText   = codeText'
+    { codeText   = codeText' <> returnPrepLines
     , codeReturn = codeReturn'
     }
   where
+    assignmentLines =
+        map (\(argName, Expr arg) -> argName <> " = " <> arg <> ";")
+            . filter (\(argName, Expr arg) -> (last . Text.words $ argName) /= arg)
+            $ (zip (if length argNames > length args then tail argNames else argNames) args)
     insertByLine :: Text -> ([Text], Maybe Text)
     insertByLine line = case parseSigLine sigName line of
         Nothing -> ([], Just line)
         Just (_, rebuildLine) ->
-            ( codeText implBody
+            ( assignmentLines <> codeText implBody -- set arguments here?
             , maybe Nothing
                     (\return -> Just (rebuildLine return))
                     (codeReturn implBody)
@@ -109,12 +125,14 @@ applyImplementation sigName args argNames (ConcreteCode implBody) code = code
             Nothing -> ([], Nothing)
             Just (returnPrepLines, codeReturn') ->
                 (returnPrepLines, Expr <$> codeReturn')
-    codeText' = filter (/= "") . concatMap
-                (\line -> case insertByLine line of
-                            (prepLines, Nothing      ) -> prepLines
-                            (prepLines, Just thisLine) -> prepLines ++ [thisLine]
-                )
-                $ codeText code
+    codeText' =
+        filter (/= "")
+            . concatMap
+                  (\line -> case insertByLine line of
+                      (prepLines, Nothing      ) -> prepLines
+                      (prepLines, Just thisLine) -> prepLines ++ [thisLine]
+                  )
+            $ codeText code
 
 -- Set.fold applyInit
 -- code
@@ -335,8 +353,12 @@ offByOne m1 m2 = case inters of
         m1
         m2
 
+
 modelTreeGraph :: ModularProgram -> Graph
-modelTreeGraph p = modelGraphToDot (ModelGraph allModels modelEdges)
+modelTreeGraph p = modelGraphToDot (modelTree p)
+
+modelTree :: ModularProgram -> ModelGraph
+modelTree p = (ModelGraph allModels modelEdges)
   where
     -- allSel = zip (map show [1..]) . Set.toList $ allSelections p
     allSel    = map (\sel -> (showSel sel, sel)) . Set.toList $ allSelections p

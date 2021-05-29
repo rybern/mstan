@@ -17,12 +17,14 @@ executable mockup
   hs-source-dirs:      src
   main-is:             Main.hs
   default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5,
+  build-depends:       attoparsec,
+                       base >= 4.7 && < 5,
+                       bytestring >= 0.10.10.1,
                        containers >= 0.6.2.1,
                        graphviz,
-                       text >= 1.2.4.0,
+                       network-simple,
                        process,
-                       attoparsec,
-                       text
-
-
+                       text,
+                       websockets,
+                       clock,
+                       directory
