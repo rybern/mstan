@@ -26,8 +26,8 @@ data Command = ModelGraphCmd ModularProgram
              | SelectCmd (Map SigName ImplName) ModularProgram
              deriving Show
 
-main = cli
--- main = server
+-- main = cli
+main = server
 
 server = runServer $ \text -> do
   readCommand text >>= go
