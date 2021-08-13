@@ -90,7 +90,7 @@ readCommand msg = do
 --       return . Just $ SelectCmd selections (parseModularProgram program)
 --     Nothing -> return Nothing
 
-basedir = "/var/www/html"
+basedir = "/var/www/html/"
 
 go :: Command -> IO Text
 go (SelectCmd selections prog) = return . Text.unlines . linesConcreteProgram $ selectModules prog selections
