@@ -74,13 +74,15 @@ indent :: Int -> [Text] -> [Text]
 indent n = map (Text.replicate n "  " <>)
 
 linesConcreteProgram :: ConcreteProgram -> [Text]
-linesConcreteProgram p = ["parameters {"]
-        ++ map (\(Param p) -> "  " <> p <> ";") (Set.toList (concreteParams p))
-        ++ [ "}"
-           , "data {"]
-        ++ indent 1 (concreteData p)
-        ++ [ "}"
-           , "model {"]
-        ++ indent 1 (codeText (unconcreteCode (concreteBody p)))
-        ++ [ "}" ]
+linesConcreteProgram p = concat
+  [ [ "data {"]
+  , indent 1 (concreteData p)
+  , [ "}"]
+  , ["parameters {"]
+  , map (\(Param p) -> "  " <> p <> ";") (Set.toList (concreteParams p))
+  , [ "}" ]
+  , [ "model {"]
+  , indent 1 (codeText (unconcreteCode (concreteBody p)))
+  , [ "}" ]
+  ]
 
