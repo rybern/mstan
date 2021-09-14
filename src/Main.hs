@@ -27,18 +27,18 @@ data Command = ModelGraphCmd ModularProgram
              deriving Show
 
 -- main = cli
-main = server
+-- main = server
 
--- main = do
---   let inFile = "gq-concatenation.m.stan"
---   contents <- Text.readFile inFile
---   let prog = parseModularProgram contents
---   print prog
---   let selections = Map.fromList [("Dist", "a")]
---   print (moduleTreeGraph prog)
---   print (modelTree prog)
---   res <- go (SelectCmd selections prog)
---   Text.putStr res
+main = do
+  let inFile = "gq-concatenation.m.stan"
+  contents <- Text.readFile inFile
+  let prog = parseModularProgram contents
+  print prog
+  let selections = Map.fromList [("Dist", "a")]
+  print (moduleTreeGraph prog)
+  print (modelTree prog)
+  res <- go (SelectCmd selections prog)
+  Text.putStr res
 
 server = runServer $ \text -> do
   readCommand text >>= \c -> (print c *> return c) >>= go

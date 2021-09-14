@@ -243,7 +243,7 @@ ignore = do
         skipSpace
     return ()
 
-parserTop :: Parser (Code, [Text])
+parserTop :: Parser ([Text], Code, Code)
 parserTop = do
     ignore
     (_, dataCode) <- option ("", Code [] Nothing)
@@ -253,14 +253,18 @@ parserTop = do
         "model"
         parserCode
     ignore
-    return (modelCode, codeText dataCode)
+    (_, gqCode) <- option ("", Code [] Nothing) $ try $ parserBlock
+        "generated quantities"
+        parserCode
+    ignore
+    return (codeText dataCode, modelCode, gqCode)
 
 parserModularProgram :: Parser ModularProgram
 parserModularProgram = do
     ignore
     topParams <- option Set.empty parserParams
     ignore
-    (modelCode, dataVars) <- parserTop
+    (dataVars, modelCode, gqCode) <- parserTop
     ignore
     implementations <- Set.fromList <$> many' (parserModule <* ignore)
     let signatures =
@@ -269,6 +273,7 @@ parserModularProgram = do
         { signatures      = signatures
         , implementations = Set.map (fmap (findModules signatures)) implementations
         , topBody         = findModules signatures modelCode
+        , topGQ           = findModules signatures gqCode
         , topData         = dataVars
         , topParams       = topParams
         }

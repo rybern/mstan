@@ -58,6 +58,7 @@ data ModularProgram = ModularProgram
   { signatures :: Set (Type, SigName), -- Constraints: Unique SigName
     implementations :: Set (ModuleImplementation ModularCode),
     topBody :: ModularCode,
+    topGQ :: ModularCode,
     topData :: [Text],
     topParams :: Set Param
   } deriving (Show)

@@ -24,7 +24,12 @@ selectModules program selectionNames = ConcreteProgram
     { concreteBody   = applyImplementations appliedSigImplementations
                                             (topBody program)
     , concreteParams = Set.union (topParams program) moduleParams
-    , concreteGQ     = foldl1' (<>) . catMaybes . map implGQ $ Map.elems appliedSigImplementations
+    , concreteGQ     =
+        (applyImplementations appliedSigImplementations (topGQ program) <>)
+        . foldl1' (<>)
+        . catMaybes
+        . map implGQ
+        $ Map.elems appliedSigImplementations
     , concreteData   = topData program
     }
   where
@@ -56,11 +61,9 @@ selectModules program selectionNames = ConcreteProgram
     applyOrderSigs            = topologicallyOrderSignatures selections
     appliedSigImplementations = foldl
         (\cImpls sigName ->
-            let
-                (Just mImpl) = Map.lookup sigName selections
+            let (Just mImpl) = Map.lookup sigName selections
                 cImpl        = fmap (applyImplementations cImpls) mImpl
-            in
-                Map.insert sigName cImpl cImpls
+            in  Map.insert sigName cImpl cImpls
         )
         Map.empty
         applyOrderSigs
@@ -108,8 +111,15 @@ applyImplementation sigName args argNames (ConcreteCode implBody) code = code
   where
     assignmentLines =
         map (\(argName, Expr arg) -> argName <> " = " <> arg <> ";")
-            . filter (\(argName, Expr arg) -> (last . Text.words $ argName) /= arg)
-            $ (zip (if length argNames > length args then tail argNames else argNames) args)
+            . filter
+                  (\(argName, Expr arg) -> (last . Text.words $ argName) /= arg)
+            $ (zip
+                  (if length argNames > length args
+                      then tail argNames
+                      else argNames
+                  )
+                  args
+              )
     insertByLine :: Text -> ([Text], Maybe Text)
     insertByLine line = case parseSigLine sigName line of
         Nothing -> ([], Just line)
