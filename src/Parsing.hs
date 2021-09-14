@@ -56,7 +56,8 @@ parserArgs = do
 
 parserTilClosed :: Int -> Parser Text
 parserTilClosed open = do
-    arg  <- takeWhile (\c -> c /= ')' && c /= '(' && (open > 0 || (c /= ',' && c /= '|')))
+    arg <- takeWhile
+        (\c -> c /= ')' && c /= '(' && (open > 0 || (c /= ',' && c /= '|')))
     peek <- peekChar
     if (open == 0 && (peek == Just ')' || peek == Just ',' || peek == Just '|'))
         then return arg
@@ -98,22 +99,22 @@ parserBlock parserHead parserBody = do
 
 parserBraced :: Parser Text
 parserBraced = do
-    line  <- takeWhile (notInClass "{}")
+    line <- takeWhile (notInClass "{}")
     char '{'
     ((line <> "{") <>) <$> parserTilClosed' 1
 
 parserTilClosed' :: Int -> Parser Text
-parserTilClosed' 0 = return ""
+parserTilClosed' 0    = return ""
 parserTilClosed' open = do
-    block  <- takeWhile (notInClass "{}")
-    peek <- peekChar
+    block <- takeWhile (notInClass "{}")
+    peek  <- peekChar
     return $ Text.pack $ (maybe [] (\p -> [p]) peek)
 
     let open' = traceShow open . traceShow block . traceShow peek $ open
     choice
-      [ char '}' >> (((block <> "}") <>) <$> parserTilClosed' (open - 1))
-      , char '{' >> (((block <> "{") <>) <$> parserTilClosed' (open + 1))
-      ]
+        [ char '}' >> (((block <> "}") <>) <$> parserTilClosed' (open - 1))
+        , char '{' >> (((block <> "{") <>) <$> parserTilClosed' (open + 1))
+        ]
 
 parserCode :: Parser Code
 parserCode = do
@@ -137,17 +138,24 @@ parserCode = do
             ignore
             (lines, ret) <- matchLine
             return (braced : lines, ret)
-        -- matchBraced = do
-        --     line <- takeTill (inClass "};")
-        --     ignore
-        --     char '{'
-        --     (lines', ret') <- matchLine
-        --     char '}'
-        --     (lines, ret) <- matchLine
-        --     return (line <> "{" : lines' ++ ["}"] ++ lines, ret)
-        matchLine = option ([], Nothing) $ choice [matchReturn, matchBody, matchBraced]
+    -- matchBraced = do
+    --     line <- takeTill (inClass "};")
+    --     ignore
+    --     char '{'
+    --     (lines', ret') <- matchLine
+    --     char '}'
+    --     (lines, ret) <- matchLine
+    --     return (line <> "{" : lines' ++ ["}"] ++ lines, ret)
+        matchLine = option ([], Nothing)
+            $ choice [matchReturn, matchBody, matchBraced]
     (lines, codeReturn) <- matchLine
     return $ Code { codeText = map ((<> ";")) lines, codeReturn = codeReturn }
+
+parserGQ :: Parser Code
+parserGQ = do
+    ignore
+    (_, gq) <- parserBlock (string "generated quantities") parserCode
+    return gq
 
 parserParams :: Parser (Set Param)
 parserParams = do
@@ -159,12 +167,13 @@ parserParams = do
 
 parserModule :: Parser (ModuleImplementation Code)
 parserModule = do
-    ((implName, implSignature, implArgs), (implParams, implBody)) <- parserBlock
+    ((implName, implSignature, implArgs), (implParams, implGQ, implBody)) <- parserBlock
         moduleHead
         moduleBody
     return $ ModuleImplementation { implBody      = implBody
                                   , implArgs      = implArgs
                                   , implSignature = implSignature
+                                  , implGQ        = implGQ
                                   , implParams    = implParams
                                   , implName      = implName
                                   }
@@ -183,12 +192,14 @@ moduleHead = do
     char ')'
     return (implName, Text.strip sigName, map Text.strip implArgs)
 
-moduleBody :: Parser (Set Param, Code)
+moduleBody :: Parser (Set Param, Maybe Code, Code)
 moduleBody = do
     implParams <- option Set.empty parserParams
     ignore
+    implGQ <- option Nothing (Just <$> parserGQ)
+    ignore
     implBody <- parserCode
-    return (implParams, implBody)
+    return (implParams, implGQ, implBody)
 
 findModules :: Set (Type, SigName) -> Code -> ModularCode
 findModules signatures code = ModularCode
@@ -256,10 +267,7 @@ parserModularProgram = do
             Set.map (\impl -> (Type "", implSignature impl)) implementations
     return $ ModularProgram
         { signatures      = signatures
-        , implementations = Set.map
-            (\impl -> impl { implBody = findModules signatures (implBody impl) }
-            )
-            implementations
+        , implementations = Set.map (fmap (findModules signatures)) implementations
         , topBody         = findModules signatures modelCode
         , topData         = dataVars
         , topParams       = topParams
@@ -470,8 +478,7 @@ partTest2 = parseOnly' parserTop $ Text.unlines
 
 codeBraced = parseOnly' parserBraced $ Text.unlines
 -- codeTest5 = parseOnly' (parserTilClosed' 1) $ Text.unlines
-    [
-      "    peep;"
+    [ "    peep;"
     , "for (i in 1:I) {"
     , "  for (j in 1:J) {"
     , "    poop;"
@@ -481,11 +488,10 @@ codeBraced = parseOnly' parserBraced $ Text.unlines
     , "}"
     ]
 
-codeBraced2 = parseOnly' (choice [string "", parserBraced]) $ Text.unlines
+codeBraced2 =
+    parseOnly' (choice [string "", parserBraced]) $ Text.unlines
 -- codeTest5 = parseOnly' (parserTilClosed' 1) $ Text.unlines
-    [
-      ""
-    ]
+                                                                 [""]
 
 findTest = findModules (Set.fromList [(Type "", "IRT_LogOdds")])
                        (Code ["inv_logit(IRT_LogOdds(i, j))"] Nothing)

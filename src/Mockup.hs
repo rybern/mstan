@@ -24,6 +24,7 @@ selectModules program selectionNames = ConcreteProgram
     { concreteBody   = applyImplementations appliedSigImplementations
                                             (topBody program)
     , concreteParams = Set.union (topParams program) moduleParams
+    , concreteGQ     = foldl1' (<>) . catMaybes . map implGQ $ Map.elems appliedSigImplementations
     , concreteData   = topData program
     }
   where
@@ -57,9 +58,7 @@ selectModules program selectionNames = ConcreteProgram
         (\cImpls sigName ->
             let
                 (Just mImpl) = Map.lookup sigName selections
-                cImpl        = mImpl
-                    { implBody = applyImplementations cImpls (implBody mImpl)
-                    }
+                cImpl        = fmap (applyImplementations cImpls) mImpl
             in
                 Map.insert sigName cImpl cImpls
         )

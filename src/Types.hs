@@ -1,3 +1,6 @@
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Types where
 
@@ -23,7 +26,14 @@ data Code = Code
   }
   deriving (Eq, Ord, Show)
 
-data ConcreteCode = ConcreteCode { unconcreteCode :: Code } deriving (Eq, Ord, Show)
+instance Semigroup Code where
+  (Code a Nothing) <> (Code b ret) = Code (a <> b) ret
+  _ <> _ = error "Can't prepend code with a return"
+
+newtype ConcreteCode = ConcreteCode { unconcreteCode :: Code }
+  deriving (Eq, Ord, Show)
+  deriving Semigroup via Code
+
 
 data ModularCode = ModularCode
   { moduleInstances :: Set (SigName, Maybe InstanceName, [Expr]),
@@ -57,21 +67,34 @@ data ModuleImplementation code = ModuleImplementation
     implArgs :: [Symbol],
     implSignature :: SigName,
     implParams :: Set Param,
+    implGQ :: Maybe code,
     implName :: ImplName
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Functor)
 
 data ConcreteProgram = ConcreteProgram
   { concreteBody :: ConcreteCode,
     concreteData :: [Text],
-    concreteParams :: Set Param
+    concreteParams :: Set Param,
+    concreteGQ :: ConcreteCode
   } deriving Show
 
 printConcreteProgram :: ConcreteProgram -> IO ()
 printConcreteProgram = mapM_ Text.putStrLn . linesConcreteProgram
 
+indentation :: Int -> Text
+indentation n = Text.replicate n "  "
+
 indent :: Int -> [Text] -> [Text]
-indent n = map (Text.replicate n "  " <>)
+indent n = map (indentation n <>)
+
+-- Remove n leading spaces if all of the code has at least that many leading spaces
+unindentCodeText :: Int -> [Text] -> [Text]
+unindentCodeText n codeText = fromMaybe codeText $ mapM unindentCodeStmt codeText
+  where unindentCodeStmt = ((Text.intercalate "\n" <$>) . unindentLines n . Text.lines)
+        unindentLines :: Int -> [Text] -> Maybe [Text]
+        unindentLines n (l:ls) = (l:) <$> mapM (Text.stripPrefix indent) ls
+          where indent = indentation n
 
 linesConcreteProgram :: ConcreteProgram -> [Text]
 linesConcreteProgram p = concat
@@ -83,6 +106,9 @@ linesConcreteProgram p = concat
   , [ "}" ]
   , [ "model {"]
   , indent 1 (codeText (unconcreteCode (concreteBody p)))
+  , [ "}" ]
+  , [ "generated quantities {"]
+  , indent 1 (unindentCodeText 1 (codeText (unconcreteCode (concreteGQ p))))
   , [ "}" ]
   ]
 
