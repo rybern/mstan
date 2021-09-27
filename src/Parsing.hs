@@ -123,8 +123,8 @@ parserCode = do
             line <- takeTill (inClass "{};")
             char ';'
             ignore
-            (lines, ret) <- matchLine
-            return $ (line : lines, ret)
+            (lines, ret) <- matchLines
+            return $ (line <> ";" : lines, ret)
         matchReturn = do
             ignore
             string "return "
@@ -136,20 +136,20 @@ parserCode = do
             ignore
             braced <- parserBraced
             ignore
-            (lines, ret) <- matchLine
+            (lines, ret) <- matchLines
             return (braced : lines, ret)
     -- matchBraced = do
     --     line <- takeTill (inClass "};")
     --     ignore
     --     char '{'
-    --     (lines', ret') <- matchLine
+    --     (lines', ret') <- matchLines
     --     char '}'
-    --     (lines, ret) <- matchLine
+    --     (lines, ret) <- matchLines
     --     return (line <> "{" : lines' ++ ["}"] ++ lines, ret)
-        matchLine = option ([], Nothing)
+        matchLines = option ([], Nothing)
             $ choice [matchReturn, matchBody, matchBraced]
-    (lines, codeReturn) <- matchLine
-    return $ Code { codeText = map ((<> ";")) lines, codeReturn = codeReturn }
+    (lines, codeReturn) <- matchLines
+    return $ Code { codeText = lines, codeReturn = codeReturn }
 
 parserGQ :: Parser Code
 parserGQ = do
