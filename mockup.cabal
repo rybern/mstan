@@ -27,4 +27,6 @@ executable mockup
                        text,
                        websockets,
                        clock,
-                       directory
+                       directory,
+                       optparse-applicative,
+                       random

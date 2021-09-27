@@ -37,8 +37,6 @@ publishGraph fp g = do
   where dotFP = fp <> ".dot"
         svgFP = fp <> ".svg"
 
-data ImplNode = ImplNode (Maybe SigNode) Text deriving (Eq, Ord, Show)
-data SigNode = SigNode Text deriving (Eq, Ord, Show)
 
 data ModuleGraph = ModuleGraph (Set ImplNode) (Set SigNode) (Map ImplNode (Set SigNode)) (Map SigNode (Set ImplNode)) deriving (Eq, Ord, Show)
 

@@ -34,6 +34,13 @@ newtype ConcreteCode = ConcreteCode { unconcreteCode :: Code }
   deriving (Eq, Ord, Show)
   deriving Semigroup via Code
 
+data ImplNode = ImplNode (Maybe SigNode) Text deriving (Eq, Ord, Show)
+data SigNode = SigNode Text deriving (Eq, Ord, Show)
+
+type Selection = Map SigName ImplName
+
+showSelection :: Selection -> Text
+showSelection = Text.intercalate "," . map (\(sig, impl) -> sig <> ":" <> impl) . Map.toList
 
 data ModularCode = ModularCode
   { moduleInstances :: Set (SigName, Maybe InstanceName, [Expr]),

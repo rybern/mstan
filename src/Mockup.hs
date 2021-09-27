@@ -362,6 +362,11 @@ offByOne m1 m2 = case inters of
         m1
         m2
 
+selectionToNodes :: Selection -> Map SigNode ImplNode
+selectionToNodes = Map.mapKeys SigNode . Map.mapWithKey (\sig impl -> ImplNode (Just (SigNode sig)) impl)
+
+nodesToSelection :: Map SigNode ImplNode -> Selection
+nodesToSelection = Map.mapKeys (\(SigNode sig) -> sig) . Map.map (\(ImplNode _ impl) -> impl)
 
 modelTreeGraph :: ModularProgram -> Graph
 modelTreeGraph p = modelGraphToDot (modelTree p)
@@ -378,6 +383,12 @@ modelTree p = (ModelGraph allModels modelEdges)
             (\((n1, s1), (n2, s2)) -> (\x -> (n1, n2, x)) <$> offByOne s1 s2)
             ((,) <$> allSel <*> allSel)
         ]
+
+arbitrarySelection :: ModularProgram -> Selection
+arbitrarySelection = nodesToSelection . Set.findMin . allSelections
+
+modelNeighbors :: ModularProgram -> Selection -> Set Selection
+modelNeighbors prog s1 = Set.map nodesToSelection . Set.filter (\s2 -> isJust (selectionToNodes s1 `offByOne` s2)) $ allSelections prog
 
 showSels :: Set (Map SigNode ImplNode) -> Text
 showSels =

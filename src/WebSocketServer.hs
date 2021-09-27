@@ -1,18 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
-module WSServer where
+module WebSocketServer where
 import           Network.WebSockets
 import qualified Data.Text                     as Text
 import qualified Data.ByteString.Lazy.Char8          as BSL
 
-port = 12345
 
-runServer :: (Text.Text -> IO Text.Text) -> IO ()
-runServer go = do
-  putStrLn $ "Listening on port " ++ show port
+data WSServerOptions = WSServerOptions {
+    port :: Int
+  }
+  deriving Show
+
+defaultWSServerOptions = WSServerOptions {
+    port = 12345
+  }
+
+runWSServer :: WSServerOptions -> (Text.Text -> IO Text.Text) -> IO ()
+runWSServer options go = do
+  putStrLn $ "Listening on port " ++ show (port options)
   runServerWithOptions
     (defaultServerOptions {
         serverHost = "0.0.0.0"
-        , serverPort = port
+        , serverPort = port options
         })
     (\pending -> do
         print "GOT CONNECTION"
