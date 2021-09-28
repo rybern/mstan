@@ -13,6 +13,9 @@ import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 import qualified Data.Text.IO                  as Text
 
+newtype MStanFile = MStanFile { unMStanFile :: FilePath }
+  deriving Show
+
 type Symbol = Text
 
 -- Stan-ish types
@@ -30,9 +33,13 @@ instance Semigroup Code where
   (Code a Nothing) <> (Code b ret) = Code (a <> b) ret
   _ <> _ = error "Can't prepend code with a return"
 
+instance Monoid Code where
+  mempty = Code [] Nothing
+
 newtype ConcreteCode = ConcreteCode { unconcreteCode :: Code }
   deriving (Eq, Ord, Show)
   deriving Semigroup via Code
+  deriving Monoid via Code
 
 data ImplNode = ImplNode (Maybe SigNode) Text deriving (Eq, Ord, Show)
 data SigNode = SigNode Text deriving (Eq, Ord, Show)

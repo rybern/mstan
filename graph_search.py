@@ -1,13 +1,25 @@
 import subprocess
 import sys
 import os.path
+from queue import PriorityQueue
+
+DEBUG_IO = False
 
 def text_command(args):
     """Run a shell command, return its stdout as a String or throw an exception if it fails."""
-    result = subprocess.run(args, capture_output=True, text=True, check=False)
+    if DEBUG_IO:
+        print("Running:", " ".join(args))
 
-    stdout = result.stdout.strip()
-    return stdout
+    try:
+        result = subprocess.run(args, text=True, check=True,
+                                stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        if DEBUG_IO:
+            print("\t ..returned.")
+        stdout = result.stdout.strip()
+        return stdout
+    except subprocess.CalledProcessError as exc:
+        sys.exit("Error in `mstan`: \"" + exc.output.strip() + "\"")
+
 
 class ModelEvaluator:
     def __init__(self, dataFile):
@@ -48,21 +60,89 @@ class ModelGraph:
         """Get an arbitrary model ID from the model graph"""
         return self.execCommand(["get-first-model"])
 
-def modelSearch(modelGraph, modelEvaluator):
-    """Return a model ID from the given model graph that scores well on the given model evaluator"""
+def modelGraphTest(modelGraph, modelEvaluator):
+    """Print out some example usage of the model graph"""
+    print("Model graph example:")
+
     first = modelGraph.getFirstModel()
+    print("\tFIRST MODEL ID:\n\t\t", first)
 
     concrete = modelGraph.getConcreteModel(first)
+    print("\tCONCRETE FILEPATH:\n\t\t", concrete)
 
-    print("model id:", first)
-    print("filepath:", concrete)
-    print("neighbors:", modelGraph.getModelNeighbors(first))
-    print("score:", modelEvaluator.score(concrete))
+    neighbors = modelGraph.getModelNeighbors(first)
+    print("\tNEIGHBORS:\n\t\t", "\n\t\t ".join(neighbors))
 
-defaultData = "test-data.r"
-defaultProgram = "gq-concatenation.m.stan"
+    score = modelEvaluator.score(concrete)
+    print("\tSCORE:\n\t\t", score)
 
-modularStanProgram = sys.argv[1] if len(sys.argv) > 1 else defaultProgram
-testData = sys.argv[2] if len(sys.argv) > 2 else defaultData
+def modelSearch(modelGraph, modelEvaluator, exhaustive=False):
+    """Return a model ID from the given model graph that scores well on the given model evaluator"""
 
-modelSearch(ModelGraph(modularStanProgram), ModelEvaluator(testData))
+    numScores = 0
+    numExpands = 0
+
+    def score(modelID):
+        concreteModelPath = modelGraph.getConcreteModel(modelID)
+        nonlocal numScores
+        numScores += 1
+        return modelEvaluator.score(concreteModelPath)
+
+    def expand(modelID):
+        nonlocal numExpands
+        numExpands += 1
+        return modelGraph.getModelNeighbors(currentModel)
+
+    maxScore, maxModel = None, None
+
+    horizon = PriorityQueue()
+
+    firstModel = modelGraph.getFirstModel()
+    firstModelScore = score(firstModel)
+    horizon.put((-firstModelScore, firstModel))
+
+    visited = set()
+
+    while not horizon.empty():
+        negCurrentScore, currentModel = horizon.get()
+        currentScore = -negCurrentScore
+
+        if currentModel in visited:
+            continue
+        visited.add(currentModel)
+
+        print("Visiting:")
+        print("\tModel ID:\t",  currentModel)
+        print("\tScore:\t\t", currentScore)
+
+        if not maxScore or currentScore >= maxScore:
+            maxScore, maxModel = currentScore, currentModel
+        else:
+            if not exhaustive: break
+
+        for neighbor in expand(currentModel):
+            if not neighbor in visited:
+                print("\tPush neighbor:\t", score(neighbor))
+                horizon.put((-score(neighbor), neighbor))
+
+    print()
+    print("Winner:")
+    print("\tModel ID:\t",  maxModel)
+    print("\tScore:\t\t", maxScore)
+    print(numScores, "scores")
+    print(numExpands, "expands")
+
+    return maxModel
+
+if __name__ == "__main__":
+    # The program was called as an executable
+
+    defaultData = "test-data.r"
+    defaultProgram = "examples/gq-concatenation.m.stan"
+
+    modularStanProgram = sys.argv[1] if len(sys.argv) > 1 else defaultProgram
+    testData = sys.argv[2] if len(sys.argv) > 2 else defaultData
+
+    # modelGraphTest(ModelGraph(modularStanProgram), ModelEvaluator(testData))
+
+    modelSearch(ModelGraph(modularStanProgram), ModelEvaluator(testData)) #, exhaustive = True)

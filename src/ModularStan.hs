@@ -26,7 +26,7 @@ selectModules program selectionNames = ConcreteProgram
     , concreteParams = Set.union (topParams program) moduleParams
     , concreteGQ     =
         (applyImplementations appliedSigImplementations (topGQ program) <>)
-        . foldl1' (<>)
+        . foldl' (<>) mempty
         . catMaybes
         . map implGQ
         $ Map.elems appliedSigImplementations

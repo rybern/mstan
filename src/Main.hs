@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
@@ -6,6 +5,7 @@ import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 import qualified Data.Text.IO                  as Text
 import qualified Data.Set                      as Set
+-- import qualified Data.Map                      as Map
 
 import Parsing
 import ModularStan
@@ -15,10 +15,15 @@ import CLI
 import GraphServer
 
 main :: IO ()
-main = parseOptions >>= \case
-  Server serverOptions -> runGraphServer serverOptions
-  Exec (MStanFile file) maybeOutFile command -> do
-    program <- parseModularProgram <$> Text.readFile file
+main = do
+  options <- parseOptions
+  -- putStrLn $ "Executing options: " ++ show options
+  execOptions options
+
+execOptions :: RunOptions -> IO ()
+execOptions (Server serverOptions) = runGraphServer serverOptions
+execOptions (Exec file maybeOutFile command) = do
+    program <- Parsing.readModularProgram file
     result <- Text.unlines <$> execCommand program command
     case maybeOutFile of
       Nothing -> Text.putStr result

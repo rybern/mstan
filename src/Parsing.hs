@@ -276,8 +276,8 @@ parserModularProgram = do
         , topParams       = topParams
         }
 
-readModularProgram :: FilePath -> IO ModularProgram
-readModularProgram = (parseModularProgram <$>) . Text.readFile
+readModularProgram :: MStanFile -> IO ModularProgram
+readModularProgram = (parseModularProgram <$>) . Text.readFile . unMStanFile
 
 parseModularProgram :: Text -> ModularProgram
 parseModularProgram t = case parseOnly parserModularProgram t of

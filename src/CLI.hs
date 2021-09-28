@@ -4,6 +4,7 @@ module CLI where
 import qualified Data.Text                     as Text
 import           Options.Applicative
 
+
 import           GraphServer
 import           Types
 import qualified Parsing
@@ -16,8 +17,6 @@ data RunOptions =
   | Exec MStanFile (Maybe FilePath) ExecCommand
   deriving Show
 
-newtype MStanFile = MStanFile { unMStanFile :: FilePath }
-  deriving Show
 
 data ExecCommand =
     GetNeighbors Selection
