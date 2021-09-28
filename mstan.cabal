@@ -1,22 +1,32 @@
-name:                mockup
+name:                mstan
 version:             0.1.0.0
--- synopsis:
--- description:
 homepage:            https://github.com/githubuser/mockup#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2021 Author name here
-category:            Web
+author:              Ryan Bernstein
+maintainer:          ryan.bernstein@columbia.edu
+copyright:           2021 Ryan Bernstein
+category:            Data Science
 build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
-executable mockup
+executable mstan
   hs-source-dirs:      src
   main-is:             Main.hs
   default-language:    Haskell2010
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Wincomplete-record-updates
+                       -Wincomplete-uni-patterns
+                       -Wredundant-constraints
+  other-modules:       CLI,
+                       GraphServer,
+                       ModularStan,
+                       Parsing,
+                       ToGraph,
+                       Types,
+                       WebSocketServer
   build-depends:       attoparsec,
                        base >= 4.7 && < 5,
                        bytestring >= 0.10.10.1,

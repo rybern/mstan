@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Mockup where
+module ModularStan where
 
 import           Control.Applicative
 import           Data.List
@@ -15,7 +15,7 @@ import qualified Data.Text.IO                  as Text
 import           ToGraph
 import           Types
 import           Parsing
-import           Debug.Trace
+
 
 -- Constraint:
 -- The selection map is total for all signatures in the program

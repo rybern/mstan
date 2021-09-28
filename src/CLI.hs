@@ -1,14 +1,15 @@
 {-# LANGUAGE ApplicativeDo, RecordWildCards #-}
 module CLI where
 
+import qualified Data.Text                     as Text
 import           Options.Applicative
+
 import           GraphServer
 import           Types
 import qualified Parsing
-import           Data.Text                      ( Text )
-import qualified Data.Text                     as Text
-import           Data.Map                       ( Map )
-import qualified Data.Map                      as Map
+
+
+
 
 data RunOptions =
     Server GraphServerOptions

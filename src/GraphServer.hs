@@ -7,19 +7,18 @@ module GraphServer
 where
 
 import           Parsing
-import           Mockup
+import           ModularStan
 import           ToGraph
-import           System.Environment
--- import System.Clock
+
 import           System.Directory
-import           Control.Concurrent
+
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 import qualified Data.Text.IO                  as Text
-import           Data.Set                       ( Set )
+
 import qualified Data.Set                      as Set
 import           Data.Map                       ( Map )
-import qualified Data.Map                      as Map
+
 import           Data.Char
 import           Data.List
 import           Types
