@@ -1,3 +1,6 @@
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Types where
 
@@ -9,6 +12,9 @@ import qualified Data.Set                      as Set
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 import qualified Data.Text.IO                  as Text
+
+newtype MStanFile = MStanFile { unMStanFile :: FilePath }
+  deriving Show
 
 type Symbol = Text
 
@@ -23,7 +29,25 @@ data Code = Code
   }
   deriving (Eq, Ord, Show)
 
-data ConcreteCode = ConcreteCode { unconcreteCode :: Code } deriving (Eq, Ord, Show)
+instance Semigroup Code where
+  (Code a Nothing) <> (Code b ret) = Code (a <> b) ret
+  _ <> _ = error "Can't prepend code with a return"
+
+instance Monoid Code where
+  mempty = Code [] Nothing
+
+newtype ConcreteCode = ConcreteCode { unconcreteCode :: Code }
+  deriving (Eq, Ord, Show)
+  deriving Semigroup via Code
+  deriving Monoid via Code
+
+data ImplNode = ImplNode (Maybe SigNode) Text deriving (Eq, Ord, Show)
+data SigNode = SigNode Text deriving (Eq, Ord, Show)
+
+type Selection = Map SigName ImplName
+
+showSelection :: Selection -> Text
+showSelection = Text.intercalate "," . map (\(sig, impl) -> sig <> ":" <> impl) . Map.toList
 
 data ModularCode = ModularCode
   { moduleInstances :: Set (SigName, Maybe InstanceName, [Expr]),
@@ -48,6 +72,7 @@ data ModularProgram = ModularProgram
   { signatures :: Set (Type, SigName), -- Constraints: Unique SigName
     implementations :: Set (ModuleImplementation ModularCode),
     topBody :: ModularCode,
+    topGQ :: ModularCode,
     topData :: [Text],
     topParams :: Set Param
   } deriving (Show)
@@ -57,30 +82,48 @@ data ModuleImplementation code = ModuleImplementation
     implArgs :: [Symbol],
     implSignature :: SigName,
     implParams :: Set Param,
+    implGQ :: Maybe code,
     implName :: ImplName
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Functor)
 
 data ConcreteProgram = ConcreteProgram
   { concreteBody :: ConcreteCode,
     concreteData :: [Text],
-    concreteParams :: Set Param
+    concreteParams :: Set Param,
+    concreteGQ :: ConcreteCode
   } deriving Show
 
 printConcreteProgram :: ConcreteProgram -> IO ()
 printConcreteProgram = mapM_ Text.putStrLn . linesConcreteProgram
 
+indentation :: Int -> Text
+indentation n = Text.replicate n "  "
+
 indent :: Int -> [Text] -> [Text]
-indent n = map (Text.replicate n "  " <>)
+indent n = map (indentation n <>)
+
+-- Remove n leading spaces if all of the code has at least that many leading spaces
+unindentCodeText :: Int -> [Text] -> [Text]
+unindentCodeText n codeText = fromMaybe codeText $ mapM unindentCodeStmt codeText
+  where unindentCodeStmt = ((Text.intercalate "\n" <$>) . unindentLines n . Text.lines)
+        unindentLines :: Int -> [Text] -> Maybe [Text]
+        unindentLines n (l:ls) = (l:) <$> mapM (Text.stripPrefix indent) ls
+          where indent = indentation n
 
 linesConcreteProgram :: ConcreteProgram -> [Text]
-linesConcreteProgram p = ["parameters {"]
-        ++ map (\(Param p) -> "  " <> p <> ";") (Set.toList (concreteParams p))
-        ++ [ "}"
-           , "data {"]
-        ++ indent 1 (concreteData p)
-        ++ [ "}"
-           , "model {"]
-        ++ indent 1 (codeText (unconcreteCode (concreteBody p)))
-        ++ [ "}" ]
+linesConcreteProgram p = concat
+  [ [ "data {"]
+  , indent 1 (concreteData p)
+  , [ "}"]
+  , ["parameters {"]
+  , map (\(Param p) -> "  " <> p <> ";") (Set.toList (concreteParams p))
+  , [ "}" ]
+  , [ "model {"]
+  , indent 1 (codeText (unconcreteCode (concreteBody p)))
+  , [ "}" ]
+  , [ "generated quantities {"]
+  , indent 1 (unindentCodeText 1 (codeText (unconcreteCode (concreteGQ p))))
+  , [ "}" ]
+  ]
 

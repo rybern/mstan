@@ -5,3 +5,5 @@ Meta
 *.rds
 *.nb.html
 *.exe
+graphs/*
+temp-models/*

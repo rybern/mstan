@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Mockup where
+module ModularStan where
 
 import           Control.Applicative
 import           Data.List
@@ -15,7 +15,7 @@ import qualified Data.Text.IO                  as Text
 import           ToGraph
 import           Types
 import           Parsing
-import           Debug.Trace
+
 
 -- Constraint:
 -- The selection map is total for all signatures in the program
@@ -24,6 +24,12 @@ selectModules program selectionNames = ConcreteProgram
     { concreteBody   = applyImplementations appliedSigImplementations
                                             (topBody program)
     , concreteParams = Set.union (topParams program) moduleParams
+    , concreteGQ     =
+        (applyImplementations appliedSigImplementations (topGQ program) <>)
+        . foldl' (<>) mempty
+        . catMaybes
+        . map implGQ
+        $ Map.elems appliedSigImplementations
     , concreteData   = topData program
     }
   where
@@ -55,13 +61,9 @@ selectModules program selectionNames = ConcreteProgram
     applyOrderSigs            = topologicallyOrderSignatures selections
     appliedSigImplementations = foldl
         (\cImpls sigName ->
-            let
-                (Just mImpl) = Map.lookup sigName selections
-                cImpl        = mImpl
-                    { implBody = applyImplementations cImpls (implBody mImpl)
-                    }
-            in
-                Map.insert sigName cImpl cImpls
+            let (Just mImpl) = Map.lookup sigName selections
+                cImpl        = fmap (applyImplementations cImpls) mImpl
+            in  Map.insert sigName cImpl cImpls
         )
         Map.empty
         applyOrderSigs
@@ -109,8 +111,15 @@ applyImplementation sigName args argNames (ConcreteCode implBody) code = code
   where
     assignmentLines =
         map (\(argName, Expr arg) -> argName <> " = " <> arg <> ";")
-            . filter (\(argName, Expr arg) -> (last . Text.words $ argName) /= arg)
-            $ (zip (if length argNames > length args then tail argNames else argNames) args)
+            . filter
+                  (\(argName, Expr arg) -> (last . Text.words $ argName) /= arg)
+            $ (zip
+                  (if length argNames > length args
+                      then tail argNames
+                      else argNames
+                  )
+                  args
+              )
     insertByLine :: Text -> ([Text], Maybe Text)
     insertByLine line = case parseSigLine sigName line of
         Nothing -> ([], Just line)
@@ -353,6 +362,11 @@ offByOne m1 m2 = case inters of
         m1
         m2
 
+selectionToNodes :: Selection -> Map SigNode ImplNode
+selectionToNodes = Map.mapKeys SigNode . Map.mapWithKey (\sig impl -> ImplNode (Just (SigNode sig)) impl)
+
+nodesToSelection :: Map SigNode ImplNode -> Selection
+nodesToSelection = Map.mapKeys (\(SigNode sig) -> sig) . Map.map (\(ImplNode _ impl) -> impl)
 
 modelTreeGraph :: ModularProgram -> Graph
 modelTreeGraph p = modelGraphToDot (modelTree p)
@@ -369,6 +383,12 @@ modelTree p = (ModelGraph allModels modelEdges)
             (\((n1, s1), (n2, s2)) -> (\x -> (n1, n2, x)) <$> offByOne s1 s2)
             ((,) <$> allSel <*> allSel)
         ]
+
+arbitrarySelection :: ModularProgram -> Selection
+arbitrarySelection = nodesToSelection . Set.findMin . allSelections
+
+modelNeighbors :: ModularProgram -> Selection -> Set Selection
+modelNeighbors prog s1 = Set.map nodesToSelection . Set.filter (\s2 -> isJust (selectionToNodes s1 `offByOne` s2)) $ allSelections prog
 
 showSels :: Set (Map SigNode ImplNode) -> Text
 showSels =

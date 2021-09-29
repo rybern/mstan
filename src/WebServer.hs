@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
-module Server where
+module WebServer where
 
 import           Control.Concurrent
 import           Network.Simple.TCP
@@ -11,6 +11,14 @@ import           Data.Map                       ( Map )
 import qualified Data.Map                      as Map
 import           Parsing
 import           Debug.Trace
+
+data WebServerOptions = WebServerOptions {
+    port :: String
+  }
+
+defaultWebServerOptions = WebServerOptions {
+    port = "12345"
+  }
 
 readText :: Socket -> IO (Maybe Text)
 readText socket = ((Text.pack . BS.unpack) <$>) <$> recv socket 100000000
@@ -28,9 +36,9 @@ unfoldRead readText = readText >>= \line -> do
             rest <- unfoldRead readText
             return $ msg <> rest
 
-runServer :: (IO (Maybe Text) -> IO [Text]) -> IO ()
-runServer go = do
-    serve (Host "127.0.0.1") "12345" $ \(connectionSocket, remoteAddr) -> do
+runServer :: WebServerOptions -> (IO (Maybe Text) -> IO [Text]) -> IO ()
+runServer options go = do
+    serve (Host "127.0.0.1") (port options) $ \(connectionSocket, remoteAddr) -> do
         putStrLn $ "TCP connection established from " ++ show remoteAddr
         res <- go (readText connectionSocket)
         mapM_ (sendText connectionSocket) res
