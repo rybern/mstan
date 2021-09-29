@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+Meta
+*.rds
+*.nb.html
+*.exe
