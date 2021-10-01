@@ -24,11 +24,23 @@ selectModules program selectionNames = ConcreteProgram
     { concreteBody   = applyImplementations appliedSigImplementations
                                             (topBody program)
     , concreteParams = Set.union (topParams program) moduleParams
+    , concreteTD     =
+        (applyImplementations appliedSigImplementations (topTD program) <>)
+        . foldl' (<>) mempty
+        . catMaybes
+        . map implTD
+        $ Map.elems appliedSigImplementations
     , concreteGQ     =
         (applyImplementations appliedSigImplementations (topGQ program) <>)
         . foldl' (<>) mempty
         . catMaybes
         . map implGQ
+        $ Map.elems appliedSigImplementations
+    , concreteFunctions     =
+        (applyImplementations appliedSigImplementations (topFunctions program) <>)
+        . foldl' (<>) mempty
+        . catMaybes
+        . map implFunctions
         $ Map.elems appliedSigImplementations
     , concreteData   = topData program
     }

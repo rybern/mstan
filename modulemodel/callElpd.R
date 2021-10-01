@@ -2,7 +2,7 @@
 #' Workflow for iterative building of a time series model.
 
 # THINGS TO CONSIDER FOR MODULARIZATION (by Hyunji)
-Network node is equivalent to one pure dgp, represented with DAG (N model signatures and N+1 implelmentations(root included)) 
+# Network node is equivalent to one pure dgp, represented with DAG (N model signatures and N+1 implelmentations(root included)) 
 #' computation choices happens within one node using `set_init`, `set_iter_sampling`
 #' model averaging happens between many nodes `loo_model_weights`
 

@@ -71,7 +71,9 @@ type InstanceName = Symbol
 data ModularProgram = ModularProgram
   { signatures :: Set (Type, SigName), -- Constraints: Unique SigName
     implementations :: Set (ModuleImplementation ModularCode),
+    topFunctions :: ModularCode,
     topBody :: ModularCode,
+    topTD :: ModularCode,
     topGQ :: ModularCode,
     topData :: [Text],
     topParams :: Set Param
@@ -81,7 +83,9 @@ data ModuleImplementation code = ModuleImplementation
   { implBody :: code,
     implArgs :: [Symbol],
     implSignature :: SigName,
+    implFunctions :: Maybe code,
     implParams :: Set Param,
+    implTD :: Maybe code,
     implGQ :: Maybe code,
     implName :: ImplName
   }
@@ -89,8 +93,10 @@ data ModuleImplementation code = ModuleImplementation
 
 data ConcreteProgram = ConcreteProgram
   { concreteBody :: ConcreteCode,
+    concreteFunctions :: ConcreteCode,
     concreteData :: [Text],
     concreteParams :: Set Param,
+    concreteTD :: ConcreteCode,
     concreteGQ :: ConcreteCode
   } deriving Show
 
@@ -113,9 +119,15 @@ unindentCodeText n codeText = fromMaybe codeText $ mapM unindentCodeStmt codeTex
 
 linesConcreteProgram :: ConcreteProgram -> [Text]
 linesConcreteProgram p = concat
-  [ [ "data {"]
+  [ [ "functions {"]
+  , indent 1 (unindentCodeText 1 (codeText (unconcreteCode (concreteFunctions p))))
+  , [ "}"]
+  , [ "data {"]
   , indent 1 (concreteData p)
   , [ "}"]
+  , ["transformed data {"]
+  , indent 1 (unindentCodeText 1 (codeText (unconcreteCode (concreteTD p))))
+  , [ "}" ]
   , ["parameters {"]
   , map (\(Param p) -> "  " <> p <> ";") (Set.toList (concreteParams p))
   , [ "}" ]

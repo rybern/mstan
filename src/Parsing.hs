@@ -155,22 +155,37 @@ parserGQ = do
     (_, gq) <- parserBlock (string "generated quantities") parserCode
     return gq
 
+parserFunctions :: Parser Code
+parserFunctions = do
+    ignore
+    (_, functions) <- parserBlock (string "functions") parserCode
+    return functions
+
+parserTD :: Parser Code
+parserTD = do
+    ignore
+    (_, td) <- parserBlock (string "transformed data") parserCode
+    return td
+
 parserParams :: Parser (Set Param)
 parserParams = do
     ignore
     (_, params) <- parserBlock (string "parameters") $ do
-        params <- many' $ takeTill (inClass "};") <* char ';'
+        params <- many' $ takeTill (inClass "};") <* char ';' <* ignore
         return . Set.fromList . map (Param . Text.strip) $ params
     return params
 
+  -- add: functions, transformed data as concatenators
 parserModule :: Parser (ModuleImplementation Code)
 parserModule = do
-    ((implName, implSignature, implArgs), (implParams, implGQ, implBody)) <-
+    ((implName, implSignature, implArgs), (implFunctions, implParams, implTD, implGQ, implBody)) <-
         parserBlock moduleHead moduleBody
     return $ ModuleImplementation { implBody      = implBody
+                                  , implFunctions = implFunctions
                                   , implArgs      = implArgs
                                   , implSignature = implSignature
                                   , implGQ        = implGQ
+                                  , implTD        = implTD
                                   , implParams    = implParams
                                   , implName      = implName
                                   }
@@ -189,14 +204,18 @@ moduleHead = do
     char ')'
     return (implName, Text.strip sigName, map Text.strip implArgs)
 
-moduleBody :: Parser (Set Param, Maybe Code, Code)
+moduleBody :: Parser (Maybe Code, Set Param, Maybe Code, Maybe Code, Code)
 moduleBody = do
+    implFunctions <- option Nothing (Just <$> parserFunctions)
+    ignore
+    implTD <- option Nothing (Just <$> parserTD)
+    ignore
     implParams <- option Set.empty parserParams
     ignore
     implGQ <- option Nothing (Just <$> parserGQ)
     ignore
     implBody <- parserCode
-    return (implParams, implGQ, implBody)
+    return (implFunctions, implParams, implTD, implGQ, implBody)
 
 findModules :: Set (Type, SigName) -> Code -> ModularCode
 findModules signatures code = ModularCode
@@ -240,11 +259,21 @@ ignore = do
         skipSpace
     return ()
 
-parserTop :: Parser ([Text], Code, Code)
+parserTop :: Parser (Code, [Text], Set Param, Code, Code, Code)
 parserTop = do
+    ignore
+    (_, functionsCode) <- option ("", Code [] Nothing) $ try $ parserBlock
+        "functions"
+        parserCode
     ignore
     (_, dataCode) <- option ("", Code [] Nothing)
         $ parserBlock "data" parserCode
+    ignore
+    (_, tdCode) <- option ("", Code [] Nothing) $ try $ parserBlock
+        "transformed data"
+        parserCode
+    ignore
+    topParams <- option Set.empty parserParams
     ignore
     (_, modelCode) <- option ("", Code [] Nothing) $ try $ parserBlock
         "model"
@@ -254,14 +283,12 @@ parserTop = do
         "generated quantities"
         parserCode
     ignore
-    return (codeText dataCode, modelCode, gqCode)
+    return (functionsCode, codeText dataCode, topParams, tdCode, modelCode, gqCode)
 
 parserModularProgram :: Parser ModularProgram
 parserModularProgram = do
     ignore
-    topParams <- option Set.empty parserParams
-    ignore
-    (dataVars, modelCode, gqCode) <- parserTop
+    (topFunctions, dataVars, topParams, tdCode, modelCode, gqCode) <- parserTop
     ignore
     implementations <- Set.fromList <$> many' (parserModule <* ignore)
     let signatures =
@@ -271,6 +298,8 @@ parserModularProgram = do
         , implementations = Set.map (fmap (findModules signatures))
                                     implementations
         , topBody         = findModules signatures modelCode
+        , topFunctions    = findModules signatures topFunctions
+        , topTD           = findModules signatures tdCode
         , topGQ           = findModules signatures gqCode
         , topData         = dataVars
         , topParams       = topParams
