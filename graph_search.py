@@ -3,6 +3,7 @@ import sys
 import os.path
 from queue import PriorityQueue
 
+# DEBUG_IO = True
 DEBUG_IO = False
 
 def text_command(args):
@@ -27,7 +28,9 @@ class ModelEvaluator:
 
     def score(self, modelPath):
         """Return the numerical score for the Stan program at the given filepath"""
-        return float(text_command(["bash", "./score.sh", modelPath]))
+        # return float(text_command(["bash", "./score.sh", modelPath]))
+        stdout_result = text_command(["Rscript", "elpd/elpd.R", modelPath, self.dataFile])
+        return float(stdout_result.split('\n')[-1].strip())
 
 model_dir = "temp-models/"
 
@@ -122,8 +125,9 @@ def modelSearch(modelGraph, modelEvaluator, exhaustive=False):
 
         for neighbor in expand(currentModel):
             if not neighbor in visited:
-                print("\tPush neighbor:\t", score(neighbor))
-                horizon.put((-score(neighbor), neighbor))
+                score = score(neighbor)
+                print("\tPush neighbor:\t", score)
+                horizon.put((-score, neighbor))
 
     print()
     print("Winner:")
@@ -139,6 +143,10 @@ if __name__ == "__main__":
 
     defaultData = "test-data.r"
     defaultProgram = "examples/gq-concatenation.m.stan"
+
+    if len(sys.argv) < 2:
+        print("Expected arguments: [modular stan file] [data file path]")
+        print("Using defaults.")
 
     modularStanProgram = sys.argv[1] if len(sys.argv) > 1 else defaultProgram
     testData = sys.argv[2] if len(sys.argv) > 2 else defaultData

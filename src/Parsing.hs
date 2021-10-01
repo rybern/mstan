@@ -240,11 +240,13 @@ ignore = do
         skipSpace
     return ()
 
-parserTop :: Parser ([Text], Code, Code)
+parserTop :: Parser ([Text], Set Param, Code, Code)
 parserTop = do
     ignore
     (_, dataCode) <- option ("", Code [] Nothing)
         $ parserBlock "data" parserCode
+    ignore
+    topParams <- option Set.empty parserParams
     ignore
     (_, modelCode) <- option ("", Code [] Nothing) $ try $ parserBlock
         "model"
@@ -254,14 +256,12 @@ parserTop = do
         "generated quantities"
         parserCode
     ignore
-    return (codeText dataCode, modelCode, gqCode)
+    return (codeText dataCode, topParams, modelCode, gqCode)
 
 parserModularProgram :: Parser ModularProgram
 parserModularProgram = do
     ignore
-    topParams <- option Set.empty parserParams
-    ignore
-    (dataVars, modelCode, gqCode) <- parserTop
+    (dataVars, topParams, modelCode, gqCode) <- parserTop
     ignore
     implementations <- Set.fromList <$> many' (parserModule <* ignore)
     let signatures =
