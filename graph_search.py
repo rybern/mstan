@@ -3,8 +3,8 @@ import sys
 import os.path
 from queue import PriorityQueue
 
-# DEBUG_IO = True
-DEBUG_IO = False
+DEBUG_IO = True
+# DEBUG_IO = False
 
 def text_command(args):
     """Run a shell command, return its stdout as a String or throw an exception if it fails."""
@@ -28,9 +28,10 @@ class ModelEvaluator:
 
     def score(self, modelPath):
         """Return the numerical score for the Stan program at the given filepath"""
-        # return float(text_command(["bash", "./score.sh", modelPath]))
         stdout_result = text_command(["Rscript", "elpd/elpd.R", modelPath, self.dataFile])
         return float(stdout_result.split('\n')[-1].strip())
+
+        # return float(text_command(["bash", "./score.sh", modelPath]))
 
 model_dir = "temp-models/"
 
@@ -104,15 +105,12 @@ def modelSearch(modelGraph, modelEvaluator, exhaustive=False):
     firstModelScore = score(firstModel)
     horizon.put((-firstModelScore, firstModel))
 
-    visited = set()
+    added = set()
+    added.add(firstModel)
 
     while not horizon.empty():
         negCurrentScore, currentModel = horizon.get()
         currentScore = -negCurrentScore
-
-        if currentModel in visited:
-            continue
-        visited.add(currentModel)
 
         print("Visiting:")
         print("\tModel ID:\t",  currentModel)
@@ -124,10 +122,11 @@ def modelSearch(modelGraph, modelEvaluator, exhaustive=False):
             if not exhaustive: break
 
         for neighbor in expand(currentModel):
-            if not neighbor in visited:
-                score = score(neighbor)
-                print("\tPush neighbor:\t", score)
-                horizon.put((-score, neighbor))
+            if not neighbor in added:
+                neighborScore = score(neighbor)
+                print("\tPush neighbor:\t", neighbor, neighborScore)
+                horizon.put((-neighborScore, neighbor))
+                added.add(neighbor)
 
     print()
     print("Winner:")
