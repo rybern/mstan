@@ -1,17 +1,14 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE OverloadedStrings #-}
 module Types where
 
 import           Data.Map                       ( Map )
 import qualified Data.Map                      as Map
-import           Data.Maybe
 import           Data.Set                       ( Set )
-import qualified Data.Set                      as Set
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
-import qualified Data.Text.IO                  as Text
 
 newtype MStanFile = MStanFile { unMStanFile :: FilePath }
   deriving Show
@@ -99,43 +96,3 @@ data ConcreteProgram = ConcreteProgram
     concreteTD :: ConcreteCode,
     concreteGQ :: ConcreteCode
   } deriving Show
-
-printConcreteProgram :: ConcreteProgram -> IO ()
-printConcreteProgram = mapM_ Text.putStrLn . linesConcreteProgram
-
-indentation :: Int -> Text
-indentation n = Text.replicate n "  "
-
-indent :: Int -> [Text] -> [Text]
-indent n = map (indentation n <>)
-
--- Remove n leading spaces if all of the code has at least that many leading spaces
-unindentCodeText :: Int -> [Text] -> [Text]
-unindentCodeText n codeText = fromMaybe codeText $ mapM unindentCodeStmt codeText
-  where unindentCodeStmt = ((Text.intercalate "\n" <$>) . unindentLines n . Text.lines)
-        unindentLines :: Int -> [Text] -> Maybe [Text]
-        unindentLines n (l:ls) = (l:) <$> mapM (Text.stripPrefix indent) ls
-          where indent = indentation n
-
-linesConcreteProgram :: ConcreteProgram -> [Text]
-linesConcreteProgram p = concat
-  [ [ "functions {"]
-  , indent 1 (unindentCodeText 1 (codeText (unconcreteCode (concreteFunctions p))))
-  , [ "}"]
-  , [ "data {"]
-  , indent 1 (concreteData p)
-  , [ "}"]
-  , ["transformed data {"]
-  , indent 1 (unindentCodeText 1 (codeText (unconcreteCode (concreteTD p))))
-  , [ "}" ]
-  , ["parameters {"]
-  , map (\(Param p) -> "  " <> p <> ";") (Set.toList (concreteParams p))
-  , [ "}" ]
-  , [ "model {"]
-  , indent 1 (codeText (unconcreteCode (concreteBody p)))
-  , [ "}" ]
-  , [ "generated quantities {"]
-  , indent 1 (unindentCodeText 1 (codeText (unconcreteCode (concreteGQ p))))
-  , [ "}" ]
-  ]
-

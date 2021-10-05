@@ -8,6 +8,7 @@ import qualified Data.Set                      as Set
 -- import qualified Data.Map                      as Map
 
 import Parsing
+import Printing
 import ModularStan
 import ToGraph
 import Types

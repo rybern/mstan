@@ -6,23 +6,21 @@ module GraphServer
     , runGraphServer)
 where
 
-import           Parsing
-import           ModularStan
-import           ToGraph
-
 import           System.Directory
-
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 import qualified Data.Text.IO                  as Text
-
 import qualified Data.Set                      as Set
 import           Data.Map                       ( Map )
-
+import           System.Random
 import           Data.Char
 import           Data.List
+
 import           Types
-import           System.Random
+import           Printing
+import           Parsing
+import           ModularStan
+import           ToGraph
 
 -- No longer using TCP server; switched to WebSockets
 -- import WebServer
