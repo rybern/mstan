@@ -1,5 +1,5 @@
 # Installation
- * You'll have to have [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/) installed and run `stack build` to compile `mstan`. When that finishes it should tell you where the binary was installed. `mstan` should be a symbolic link to that binary.
+ * You'll have to have [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/) installed and run `stack build` to compile `mstan`. When that finishes it should tell you where the binary was installed (e.g. Installing executable mstan in .stack-work/install/x86_64-linux-nix/.../8.8.4/bin). `mstan` should be a symbolic link to the `mstan` binary in that folder.
  * You can use `nix` to install the R dependencies by running everything inside a `nix-shell` (because it'll default to using `default.nix`).
  * You'll need to have Rscript, cmdstanr, and some other dependencies (see `default.nix` if you're having trouble finding dependencies).
  * You'll need to have `cmdstan` installed and have the `CMDSTAN` environment variable set so that `cmdstanr` can find it.
