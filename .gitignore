@@ -7,3 +7,4 @@ Meta
 *.exe
 graphs/*
 temp-models/*
+mstan
