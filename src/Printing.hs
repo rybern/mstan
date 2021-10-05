@@ -50,6 +50,6 @@ linesConcreteProgram (ConcreteProgram {..}) = concat $ catMaybes
   , Just . linesBlock "data" $ concreteData
   , (linesBlock "transformed data" <$>) . whenNonempty . unindentNestedCode 1 . linesCode $ concreteTD
   , Just . linesBlock "parameters" . map lineParam . Set.toList $ concreteParams
-  , Just . linesBlock "model {" . linesCode $ concreteBody
+  , Just . linesBlock "model" . linesCode $ concreteBody
   , (linesBlock "generated quantities" <$>) . whenNonempty . unindentNestedCode 1 . linesCode $ concreteGQ
   ]

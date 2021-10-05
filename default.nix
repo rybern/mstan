@@ -75,6 +75,7 @@ stdenvNoCC.mkDerivation rec {
     posterior
     R
     gcc9
+    python3
   ];
 
   CMDSTAN = "~/projects/cmdstan-g++10/";
