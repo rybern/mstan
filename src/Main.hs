@@ -25,7 +25,6 @@ execOptions :: RunOptions -> IO ()
 execOptions (Server serverOptions) = runGraphServer serverOptions
 execOptions (Exec file maybeOutFile command) = do
     program <- Parsing.readModularProgram file
-    print program
     result <- Text.unlines <$> execCommand program command
     case maybeOutFile of
       Nothing -> Text.putStr result

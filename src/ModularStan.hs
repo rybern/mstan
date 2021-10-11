@@ -15,7 +15,6 @@ import qualified Data.Text.IO                  as Text
 import           ToGraph
 import           Types
 import           Parsing
-import           Debug.Trace
 
 
 -- Constraint:
@@ -71,7 +70,7 @@ selectModules program selectionNames = ConcreteProgram
         selectionNames
 
     -- Mapping from field signature (the whole A.B) to (modular) field implementations
-    implementationMap = traceShowId $ splitModulesIntoFields selections
+    implementationMap = splitModulesIntoFields selections
     -- Order that signatures should be concretized to avoid missing dependencies
     applyOrderSigs = topologicallyOrderSignatures implementationMap
     -- Mapping from field signature to concretized field implementations
@@ -86,9 +85,9 @@ selectModules program selectionNames = ConcreteProgram
 
     -- Apply all of the field signatures in a piece of code
     concretizeCode :: ModularCode -> ConcreteCode
-    concretizeCode  = applyImplementations (traceShowId concretizedFieldImplementations)
+    concretizeCode  = applyImplementations concretizedFieldImplementations
 
-    concreteModules = traceShowId $ map (concretizeCode <$>) $ Map.elems selections
+    concreteModules = map (concretizeCode <$>) $ Map.elems selections
 
 -- instanceInitializers
 --     :: Map SigName ModuleImplementation -> Code -> Map InstanceName Code
