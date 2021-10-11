@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Parsing where
@@ -14,6 +16,7 @@ import qualified Data.Text.IO                  as Text
 
 import           Types
 import           Prelude                 hiding ( takeWhile )
+import Indent
 
 parseSelections :: Text -> Maybe (Map SigName ImplName)
 parseSelections s = case parseOnly parserSelections s of
@@ -23,8 +26,8 @@ parseSelections s = case parseOnly parserSelections s of
 parserSelections :: Parser (Map SigName ImplName)
 parserSelections = do
     let pair = do
-            sig <- takeTill (inClass ",:")
-            _ <- char ':'
+            sig  <- takeTill (inClass ",:")
+            _    <- char ':'
             impl <- takeTill (inClass ",:")
             return (sig, impl)
     pairs <- sepBy pair ","
@@ -32,8 +35,8 @@ parserSelections = do
 
 parseSigLine :: SigName -> Text -> Maybe ([Expr], Expr -> Text)
 parseSigLine sigName line = case parseOnly (parserSigLine sigName) line of
-    Left  _ -> Nothing
-    Right res       -> Just res
+    Left  _   -> Nothing
+    Right res -> Just res
 
 parserSigLine :: SigName -> Parser ([Expr], Expr -> Text)
 parserSigLine sigName = do
@@ -44,11 +47,11 @@ parserSigLine sigName = do
 
 parserArgs :: Parser [Expr]
 parserArgs = do
-    _ <- char '('
+    _    <- char '('
     -- args <- sepBy "," (many' (notChar ')'))
     -- args <- (many' (notChar ')'))
     args <- sepBy (parserTilClosed 0) (choice [",", "|"])
-    _ <- char ')'
+    _    <- char ')'
     -- return . map Expr $ [args]
     return . map Expr . filter (/= "") . map Text.strip $ args
 
@@ -99,7 +102,7 @@ parserBlock parserHeader parserBody = do
 parserBraced :: Parser Text
 parserBraced = do
     line <- takeWhile (notInClass "{}")
-    _ <- char '{'
+    _    <- char '{'
     ((line <> "{") <>) <$> parserTilClosed' 1
 
 parserTilClosed' :: Int -> Parser Text
@@ -114,8 +117,8 @@ parserTilClosed' open = do
         , char '{' >> (((block <> "{") <>) <$> parserTilClosed' (open + 1))
         ]
 
-parserCode :: Parser Code
-parserCode = do
+parserCode :: Int -> Parser Code
+parserCode expectedIndent = do
     ignore
     let matchBody = do
             line <- takeTill (inClass "{};")
@@ -136,35 +139,35 @@ parserCode = do
             ignore
             (lines, ret) <- matchLines
             return (braced : lines, ret)
-    -- matchBraced = do
-    --     line <- takeTill (inClass "};")
-    --     ignore
-    --     char '{'
-    --     (lines', ret') <- matchLines
-    --     char '}'
-    --     (lines, ret) <- matchLines
-    --     return (line <> "{" : lines' ++ ["}"] ++ lines, ret)
+-- matchBraced = do
+--     line <- takeTill (inClass "};")
+--     ignore
+--     char '{'
+--     (lines', ret') <- matchLines
+--     char '}'
+--     (lines, ret) <- matchLines
+--     return (line <> "{" : lines' ++ ["}"] ++ lines, ret)
         matchLines = option ([], Nothing)
             $ choice [matchReturn, matchBody, matchBraced]
     (lines, codeReturn) <- matchLines
-    return $ Code { codeText = lines, codeReturn = codeReturn }
+    return $ Code { codeText = unindentNestedLines expectedIndent lines, codeReturn = codeReturn }
 
 parserGQ :: Parser Code
 parserGQ = do
     ignore
-    (_, gq) <- parserBlock (string "generated quantities") parserCode
+    (_, gq) <- parserBlock (string "generated quantities") (parserCode 2)
     return gq
 
 parserFunctions :: Parser Code
 parserFunctions = do
     ignore
-    (_, functions) <- parserBlock (string "functions") parserCode
+    (_, functions) <- parserBlock (string "functions") (parserCode 2)
     return functions
 
 parserTD :: Parser Code
 parserTD = do
     ignore
-    (_, td) <- parserBlock (string "transformed data") parserCode
+    (_, td) <- parserBlock (string "transformed data") (parserCode 2)
     return td
 
 parserParams :: Parser (Set Param)
@@ -175,37 +178,65 @@ parserParams = do
         return . Set.fromList . map (Param . Text.strip) $ params
     return params
 
-  -- add: functions, transformed data as concatenators
 parserModule :: Parser (ModuleImplementation Code)
-parserModule = do
-    ((implName, implSignature, implArgs), (implFunctions, implParams, implTD, implGQ, implBody)) <-
-        parserBlock moduleHead moduleBody
-    return $ ModuleImplementation { implBody      = implBody
-                                  , implFunctions = implFunctions
-                                  , implArgs      = implArgs
-                                  , implSignature = implSignature
-                                  , implGQ        = implGQ
-                                  , implTD        = implTD
-                                  , implParams    = implParams
-                                  , implName      = implName
-                                  }
+parserModule = choice [parserAssociatedModule, parserSingletonModule]
 
-moduleHead :: Parser (Text, Text, [Text])
-moduleHead = do
+fieldHead :: Parser (Text, [Text])
+fieldHead = do
+    sigName  <- takeTill (inClass "( {")
+    fieldArgs <- moduleArgs
+    return (Text.strip sigName, fieldArgs)
+
+parserField :: Parser (ModuleField Code)
+parserField = do
+  ((justFieldSignature, fieldArgs), fieldBody) <- parserBlock fieldHead (parserCode 2)
+  let fieldSignature = Just justFieldSignature
+  return $ ModuleField { .. }
+
+parserFields :: Parser [ModuleField Code]
+parserFields = many1' parserField
+
+parserAssociatedModule :: Parser (ModuleImplementation Code)
+parserAssociatedModule = do
+    ((implName, implSignature, ()), (implFunctions, implParams, implTD, implGQ, implFields)) <-
+        parserBlock (moduleHead (return ())) (moduleBody parserFields)
+    return $ ModuleImplementation { .. }
+
+parserSingletonModule :: Parser (ModuleImplementation Code)
+parserSingletonModule = do
+    ((implName, implSignature, implArgs), (implFunctions, implParams, implTD, implGQ, implBody)) <-
+        parserBlock (moduleHead moduleArgs) (moduleBody (parserCode 1))
+    let implFields =
+            [ ModuleField { fieldBody      = implBody
+                          , fieldSignature = Nothing
+                          , fieldArgs      = implArgs
+                          }
+            ]
+    return $ ModuleImplementation { .. }
+
+moduleArgs :: Parser [Text]
+moduleArgs = do
+    char '('
+    implArgs <- sepBy (takeTill (inClass "|),")) (choice [",", "|"])
+    char ')'
+    return $ map Text.strip implArgs
+
+moduleHead :: Parser args -> Parser (Text, Text, args)
+moduleHead parseArgs = do
     string "module"
     skipSpace
     char '"'
     implName <- takeTill (== '"')
     char '"'
     skipSpace
-    sigName <- takeTill (== '(')
-    char '('
-    implArgs <- sepBy (takeTill (inClass "|),")) (choice [",", "|"])
-    char ')'
-    return (implName, Text.strip sigName, map Text.strip implArgs)
+    sigName  <- takeTill (inClass "( {")
+    implArgs <- parseArgs
+    return (implName, Text.strip sigName, implArgs)
 
-moduleBody :: Parser (Maybe Code, Set Param, Maybe Code, Maybe Code, Code)
-moduleBody = do
+moduleBody
+    :: Parser body
+    -> Parser (Maybe Code, Set Param, Maybe Code, Maybe Code, body)
+moduleBody parseBody = do
     implFunctions <- option Nothing (Just <$> parserFunctions)
     ignore
     implTD <- option Nothing (Just <$> parserTD)
@@ -214,16 +245,16 @@ moduleBody = do
     ignore
     implGQ <- option Nothing (Just <$> parserGQ)
     ignore
-    implBody <- parserCode
+    implBody <- parseBody
     return (implFunctions, implParams, implTD, implGQ, implBody)
 
-findModules :: Set (Type, SigName) -> Code -> ModularCode
+findModules :: Set SigName -> Code -> ModularCode
 findModules signatures code = ModularCode
     { modularCode     = code
     , moduleInstances =
         Set.fromList
         . mapMaybe
-              (\(_, sigName) ->
+              (\sigName ->
                   case
                           parseSigLine
                               sigName
@@ -264,39 +295,46 @@ parserTop = do
     ignore
     (_, functionsCode) <- option ("", Code [] Nothing) $ try $ parserBlock
         "functions"
-        parserCode
+        (parserCode 1)
     ignore
     (_, dataCode) <- option ("", Code [] Nothing)
-        $ parserBlock "data" parserCode
+        $ parserBlock "data" (parserCode 1)
     ignore
     (_, tdCode) <- option ("", Code [] Nothing) $ try $ parserBlock
         "transformed data"
-        parserCode
+        (parserCode 1)
     ignore
     topParams <- option Set.empty parserParams
     ignore
     (_, modelCode) <- option ("", Code [] Nothing) $ try $ parserBlock
         "model"
-        parserCode
+        (parserCode 1)
     ignore
     (_, gqCode) <- option ("", Code [] Nothing) $ try $ parserBlock
         "generated quantities"
-        parserCode
+        (parserCode 1)
     ignore
-    return (functionsCode, codeText dataCode, topParams, tdCode, modelCode, gqCode)
+    return
+        (functionsCode, codeText dataCode, topParams, tdCode, modelCode, gqCode)
+
+fieldSignatures :: ModuleImplementation code -> Set SigName
+fieldSignatures moduleImpl =
+  let sig field = maybe (implSignature moduleImpl)
+                  (\fieldSig -> (implSignature moduleImpl) <> "." <> fieldSig)
+                  (fieldSignature field)
+  in  Set.fromList [ sig field | field <- implFields moduleImpl ]
 
 parserModularProgram :: Parser ModularProgram
 parserModularProgram = do
     ignore
     (topFunctions, dataVars, topParams, tdCode, modelCode, gqCode) <- parserTop
     ignore
-    implementations <- Set.fromList <$> many' (parserModule <* ignore)
-    let signatures =
-            Set.map (\impl -> (Type "", implSignature impl)) implementations
+    implementations <- many' (parserModule <* ignore)
+    let signatures = Set.unions $ map fieldSignatures implementations
     return $ ModularProgram
-        { signatures      = signatures
+        { signatures      = Set.map (Type "",) signatures
         , implementations = Set.map (fmap (findModules signatures))
-                                    implementations
+                                    (Set.fromList implementations)
         , topBody         = findModules signatures modelCode
         , topFunctions    = findModules signatures topFunctions
         , topTD           = findModules signatures tdCode
@@ -338,9 +376,9 @@ parseOnly' parser t = case parse parser t of
     Partial i -> i ""
     x         -> x
 
-codeTest = parseOnly' parserCode $ Text.unlines ["  testa;", "  testb;"]
+codeTest = parseOnly' (parserCode 1) $ Text.unlines ["  testa;", "  testb;"]
 
-codeTest2 = parseOnly' parserCode $ Text.empty
+codeTest2 = parseOnly' (parserCode 1) $ Text.empty
 
 moduleTest = parseOnly'
     parserModule
@@ -349,7 +387,7 @@ moduleTest = parseOnly'
 moduleTest5 =
     parseOnly' parserModule "module \"Angular\" P(x) {\n  PAngle(x);\n    }"
 
-headTest2 = parseOnly' moduleHead "module \"Angular\" P(x)"
+headTest2 = parseOnly' (moduleHead moduleArgs) "module \"Angular\" P(x)"
 
 -- codeTest5 = parseOnly' parserModule "module \"Angular\" P(x) {\n  PAngle(x);\n    }"
 
@@ -395,31 +433,32 @@ moduleTest3 = parseOnly' parserModule $ Text.unlines
 paramsTest = parseOnly' parserParams
     $ Text.unlines ["  parameters {", "    real x;", "  }"]
 
-bodyTest2 = parseOnly' moduleBody
+bodyTest2 = parseOnly' (moduleBody (parserCode 1))
     $ Text.unlines ["  parameters {", "    real x;", "  }"]
 
-bodyTest4 = parseOnly' moduleBody $ Text.empty
+bodyTest4 = parseOnly' (moduleBody (parserCode 1)) $ Text.empty
 
-bodyTest3 = parseOnly' moduleBody $ Text.unlines ["  testa;", "  testb;"]
+bodyTest3 =
+    parseOnly' (moduleBody (parserCode 1)) $ Text.unlines ["  testa;", "  testb;"]
 
-bodyTest = parseOnly' moduleBody $ Text.unlines
+bodyTest = parseOnly' (moduleBody (parserCode 1)) $ Text.unlines
     ["  parameters {", "    real x;", "  }", "  testa;", "  testb;"]
 
 blockTest = parseOnly'
     (do
         -- parserBlock (string "head") moduleBody
         -- moduleBody
-        parserCode
+        (parserCode 1)
     )
     "}"
 
 moduleTest' =
     parseOnly'
             (do
-                parserBlock moduleHead $ do
+                parserBlock (moduleHead moduleArgs) $ do
                     implParams <- option Set.empty parserParams
                     -- ignore
-                    implBody   <- option (Code [] Nothing) parserCode
+                    implBody   <- option (Code [] Nothing) (parserCode 1)
                     -- ignore
                     return (implParams, implBody)
             )
@@ -436,10 +475,10 @@ moduleTest' =
 moduleTest'' =
     parseOnly'
             (do
-                parserBlock moduleHead $ do
+                parserBlock (moduleHead moduleArgs) $ do
                     implParams <- option Set.empty parserParams
                     ignore
-                    implBody <- parserCode
+                    implBody <- (parserCode 1)
                     return (implParams, implBody)
             )
         $ Text.unlines
@@ -452,8 +491,8 @@ moduleTest'' =
               , "}"
               ]
 
-headTest =
-    parseOnly' moduleHead "module \"without-guesses\" IRT_Prob(int i, int j)"
+headTest = parseOnly' (moduleHead moduleArgs)
+                      "module \"without-guesses\" IRT_Prob(int i, int j)"
 
 -- this should pass
 ignoreTest2 = parseOnly' (ignore >> "hi") $ "    hi"
@@ -470,9 +509,9 @@ dataTest = parseOnly' (parserBlock "data" (takeTill (== '}')))
     $ Text.unlines ["data {", "  real x;", "}"]
 
 codeTest3 =
-    parseOnly' parserCode $ Text.unlines ["  testa;", "  testb;", "  return 5;"]
+    parseOnly' (parserCode 1) $ Text.unlines ["  testa;", "  testb;", "  return 5;"]
 
-codeTest4 = parseOnly' parserCode $ Text.unlines
+codeTest4 = parseOnly' (parserCode 1) $ Text.unlines
     ["  testa; // comment", "", "  testb;", "  return 5; // comment"]
 
 topTest = parseOnly' parserTop $ Text.unlines ["data {", "  real x;", "}"]
@@ -528,5 +567,5 @@ codeBraced2 =
       -- codeTest5 = parseOnly' (parserTilClosed' 1) $ Text.unlines
                                                                  [""]
 
-findTest = findModules (Set.fromList [(Type "", "IRT_LogOdds")])
+findTest = findModules (Set.fromList ["IRT_LogOdds"])
                        (Code ["inv_logit(IRT_LogOdds(i, j))"] Nothing)

@@ -76,9 +76,15 @@ data ModularProgram = ModularProgram
     topParams :: Set Param
   } deriving (Show)
 
+data ModuleField code = ModuleField
+  { fieldBody :: code
+  , fieldArgs :: [Symbol]
+  , fieldSignature :: Maybe SigName
+  }
+  deriving (Eq, Ord, Show, Functor)
+
 data ModuleImplementation code = ModuleImplementation
-  { implBody :: code,
-    implArgs :: [Symbol],
+  { implFields :: [ModuleField code],
     implSignature :: SigName,
     implFunctions :: Maybe code,
     implParams :: Set Param,
