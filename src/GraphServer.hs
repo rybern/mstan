@@ -70,7 +70,7 @@ generateID = (show . abs) <$> (randomIO :: IO Int)
 
 runCommand :: FilePath -> Command -> IO Text
 runCommand _ (SelectCmd selections prog) =
-    return . Text.unlines . linesConcreteProgram $ selectModules prog selections
+    return . Text.intercalate "\n" . linesConcreteProgram $ selectModules prog selections
 runCommand fileDir (ModelGraphCmd prog) = do
     let modelGraph = modelTree prog
 
