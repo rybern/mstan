@@ -83,13 +83,16 @@ parseParenthetical = do
   skipSpace
   return content
 
+maybeParse :: Parser a -> Parser ()
+maybeParse p = choice [p *> return (), return ()]
+
 needsParentheses :: Text -> Bool
 needsParentheses line = case parseOnly boundParser line of
     Left  _ -> True
     Right _ -> False
   where boundParser = do
-          try parseVar
-          try parseParenthetical
+          maybeParse parseVar
+          maybeParse parseParenthetical
           endOfInput
 
 maybeAddParens :: Expr -> Expr
