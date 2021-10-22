@@ -27,6 +27,7 @@ executable mstan
                        ToGraph,
                        Types,
                        Printing,
+                       DiagnosticPrinting,
                        WebSocketServer,
                        Indent
   build-depends:       attoparsec,

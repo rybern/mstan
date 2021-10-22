@@ -8,8 +8,16 @@ import           Data.Maybe
 indentation :: Int -> Text
 indentation n = Text.replicate n "  "
 
+starIndentation :: Int -> Text
+starIndentation 0 = ""
+starIndentation 1 = "* "
+starIndentation n = indentation (n - 1) <> starIndentation 1
+
+starIndent :: Int -> [Text] -> [Text]
+starIndent n (l:ls) = indentNestedLines n $ (starIndentation n <> l) : (map (indentation n <>) ls)
+
 indent :: Int -> [Text] -> [Text]
-indent n = map (indentation n <>)
+indent n = indentNestedLines n . map (indentation n <>)
 
 -- Remove n leading spaces if all of the code has at least that many leading spaces
 indentNestedLines :: Int -> [Text] -> [Text]
@@ -27,3 +35,5 @@ unindentNestedLines n codeText = fromMaybe codeText $ mapM unindentCodeStmt code
           where indent = indentation n
 
 
+whenNonempty :: [a] -> Maybe [a]
+whenNonempty xs = if null xs then Nothing else Just xs

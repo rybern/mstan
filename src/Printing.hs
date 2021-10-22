@@ -19,12 +19,10 @@ linesCode = codeText . unconcreteCode
 linesBlock :: Text -> [Text] -> [Text]
 linesBlock name lines = concat [
     [name <> " {"]
-  , indent 1 . indentNestedLines 1 $ lines
+  , indent 1 $ lines
   , [ "}"]
   ]
 
-whenNonempty :: [a] -> Maybe [a]
-whenNonempty xs = if null xs then Nothing else Just xs
 
 lineParam :: Param -> Text
 lineParam (Param p) = p <> ";"
@@ -34,7 +32,7 @@ linesConcreteProgram (ConcreteProgram {..}) = concat $ catMaybes
   [ (linesBlock "functions" <$>) . whenNonempty . linesCode $ concreteFunctions
   , Just . linesBlock "data" $ concreteData
   , (linesBlock "transformed data" <$>) . whenNonempty . linesCode $ concreteTD
-  , Just . linesBlock "parameters" . map lineParam . Set.toList $ concreteParams
+  , (linesBlock "parameters" <$>) . whenNonempty . map lineParam . Set.toList $ concreteParams
   , Just . linesBlock "model" . linesCode $ concreteBody
   , (linesBlock "generated quantities" <$>) . whenNonempty . linesCode $ concreteGQ
   ]

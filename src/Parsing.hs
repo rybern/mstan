@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -29,17 +30,17 @@ parserSelections = do
             sig  <- takeTill (inClass ",:")
             _    <- char ':'
             impl <- takeTill (inClass ",:")
-            return (sig, impl)
+            return (SigName sig, ImplName impl)
     pairs <- sepBy pair ","
     return $ Map.fromList pairs
 
-parseSigLine :: SigName -> Text -> Maybe ([Expr], Expr -> Text)
+parseSigLine :: FullSigName -> Text -> Maybe ([Expr], Expr -> Text)
 parseSigLine sigName line = case parseOnly (parserSigLine sigName) line of
     Left  _   -> Nothing
     Right res -> Just res
 
-parserSigLine :: SigName -> Parser ([Expr], Expr -> Text)
-parserSigLine sigName = do
+parserSigLine :: FullSigName -> Parser ([Expr], Expr -> Text)
+parserSigLine (FullSigName sigName) = do
     left  <- manyTill anyChar $ string sigName
     args  <- parserArgs
     right <- many' anyChar
@@ -70,7 +71,7 @@ parserTilClosed open = do
 tests :: IO ()
 tests = mapM_
     (\(sig, code) -> do
-        let Just (args, f) = parseSigLine sig code
+        let Just (args, f) = parseSigLine (FullSigName sig) code
         putStrLn $ "----------"
         putStrLn $ "code \"" ++ Text.unpack code ++ "\""
         putStrLn $ "sig \"" ++ Text.unpack sig ++ "\""
@@ -181,11 +182,11 @@ parserParams = do
 parserModule :: Parser (ModuleImplementation Code)
 parserModule = choice [parserAssociatedModule, parserSingletonModule]
 
-fieldHead :: Parser (Text, [Text])
+fieldHead :: Parser (FieldName, [Text])
 fieldHead = do
     sigName  <- takeTill (inClass "( {")
     fieldArgs <- moduleArgs
-    return (Text.strip sigName, fieldArgs)
+    return (FieldName $ Text.strip sigName, fieldArgs)
 
 parserField :: Parser (ModuleField Code)
 parserField = do
@@ -216,12 +217,13 @@ parserSingletonModule = do
 
 moduleArgs :: Parser [Text]
 moduleArgs = do
+    skipSpace
     char '('
     implArgs <- sepBy (takeTill (inClass "|),")) (choice [",", "|"])
     char ')'
     return $ map Text.strip implArgs
 
-moduleHead :: Parser args -> Parser (Text, Text, args)
+moduleHead :: Parser args -> Parser (ImplName, SigName, args)
 moduleHead parseArgs = do
     string "module"
     skipSpace
@@ -231,7 +233,7 @@ moduleHead parseArgs = do
     skipSpace
     sigName  <- takeTill (inClass "( {")
     implArgs <- parseArgs
-    return (implName, Text.strip sigName, implArgs)
+    return (ImplName implName, SigName $ Text.strip sigName, implArgs)
 
 moduleBody
     :: Parser body
@@ -248,16 +250,16 @@ moduleBody parseBody = do
     implBody <- parseBody
     return (implFunctions, implParams, implTD, implGQ, implBody)
 
-findModules :: Set SigName -> Code -> ModularCode
+findModules :: Set (SigName, Maybe FieldName) -> Code -> ModularCode
 findModules signatures code = ModularCode
     { modularCode     = code
     , moduleInstances =
         Set.fromList
         . mapMaybe
-              (\sigName ->
+              (\(sigName, fieldName) ->
                   case
                           parseSigLine
-                              sigName
+                              (fullSigName (sigName, fieldName))
                               (  Text.unlines
                               $  (maybe [] (\(Expr c) -> [c]) (codeReturn code)
                                  )
@@ -265,11 +267,15 @@ findModules signatures code = ModularCode
                               )
                       of
                           Nothing        -> Nothing
-                          Just (args, _) -> Just (sigName, Nothing, args)
+                          Just (args, _) -> Just (sigName, fieldName, args)
               )
         . Set.toList
         $ signatures
     }
+
+fullSigName :: (SigName, Maybe FieldName) -> FullSigName
+fullSigName (SigName sigName, Nothing) = FullSigName sigName
+fullSigName (SigName sigName, Just (FieldName fieldName)) = FullSigName $ sigName <> "." <> fieldName
 
 ignore :: Parser ()
 ignore = do
@@ -290,19 +296,19 @@ ignore = do
         skipSpace
     return ()
 
-parserTop :: Parser (Code, [Text], Set Param, Code, Code, Code)
+parserTop :: Parser (Maybe Code, [Text], Set Param, Maybe Code, Code, Maybe Code)
 parserTop = do
     ignore
-    (_, functionsCode) <- option ("", Code [] Nothing) $ try $ parserBlock
+    (_, functionsCode) <- option ("", Nothing) $ try $ parserBlock
         "functions"
-        (parserCode 1)
+        (Just <$> parserCode 1)
     ignore
     (_, dataCode) <- option ("", Code [] Nothing)
         $ parserBlock "data" (parserCode 1)
     ignore
-    (_, tdCode) <- option ("", Code [] Nothing) $ try $ parserBlock
+    (_, tdCode) <- option ("", Nothing) $ try $ parserBlock
         "transformed data"
-        (parserCode 1)
+        (Just <$> parserCode 1)
     ignore
     topParams <- option Set.empty parserParams
     ignore
@@ -310,19 +316,16 @@ parserTop = do
         "model"
         (parserCode 1)
     ignore
-    (_, gqCode) <- option ("", Code [] Nothing) $ try $ parserBlock
+    (_, gqCode) <- option ("", Nothing) $ try $ parserBlock
         "generated quantities"
-        (parserCode 1)
+        (Just <$> parserCode 1)
     ignore
     return
         (functionsCode, codeText dataCode, topParams, tdCode, modelCode, gqCode)
 
-fieldSignatures :: ModuleImplementation code -> Set SigName
+fieldSignatures :: ModuleImplementation code -> Set (SigName, Maybe FieldName)
 fieldSignatures moduleImpl =
-  let sig field = maybe (implSignature moduleImpl)
-                  (\fieldSig -> (implSignature moduleImpl) <> "." <> fieldSig)
-                  (fieldSignature field)
-  in  Set.fromList [ sig field | field <- implFields moduleImpl ]
+  Set.fromList [ (implSignature moduleImpl, fieldSignature field) | field <- implFields moduleImpl ]
 
 parserModularProgram :: Parser ModularProgram
 parserModularProgram = do
@@ -332,13 +335,13 @@ parserModularProgram = do
     implementations <- many' (parserModule <* ignore)
     let signatures = Set.unions $ map fieldSignatures implementations
     return $ ModularProgram
-        { signatures      = Set.map (Type "",) signatures
+        { signatures      = Set.map ((Type "",) . fst) signatures
         , implementations = Set.map (fmap (findModules signatures))
                                     (Set.fromList implementations)
         , topBody         = findModules signatures modelCode
-        , topFunctions    = findModules signatures topFunctions
-        , topTD           = findModules signatures tdCode
-        , topGQ           = findModules signatures gqCode
+        , topFunctions    = findModules signatures <$> topFunctions
+        , topTD           = findModules signatures <$> tdCode
+        , topGQ           = findModules signatures <$> gqCode
         , topData         = dataVars
         , topParams       = topParams
         }
@@ -567,5 +570,5 @@ codeBraced2 =
       -- codeTest5 = parseOnly' (parserTilClosed' 1) $ Text.unlines
                                                                  [""]
 
-findTest = findModules (Set.fromList ["IRT_LogOdds"])
+findTest = findModules (Set.fromList [(SigName "IRT_LogOdds", Nothing)])
                        (Code ["inv_logit(IRT_LogOdds(i, j))"] Nothing)

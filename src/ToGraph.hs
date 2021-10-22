@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
 module ToGraph where
 
@@ -33,7 +34,7 @@ publishGraph fp g = do
         svgFP = fp <> ".svg"
 
 
-data ModuleGraph = ModuleGraph (Set ImplNode) (Set SigNode) (Map ImplNode (Set SigNode)) (Map SigNode (Set ImplNode)) deriving (Eq, Ord, Show)
+data ModuleGraph = ModuleGraph (Set ImplID) (Set SigName) (Map ImplID (Set SigName)) (Map SigName (Set ImplName)) deriving (Eq, Ord, Show)
 
 data ModelNode = ModelNode Text deriving (Eq, Ord, Show)
 data DeltaModule = DeltaModule Text Text Text deriving (Eq, Ord, Show)
@@ -42,33 +43,39 @@ data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, DeltaModule
 
 
 
-implID :: ImplNode -> Text
-implID (ImplNode (Just (SigNode s)) i) = s <> ":" <> i
-implID (ImplNode Nothing _) = "root"
+implID :: ImplID -> Text
+implID (Just (SigName s), ImplName i) = s <> ":" <> i
+implID (Nothing, _) = "root"
 
-implLabel :: ImplNode -> Attribute
-implLabel (ImplNode _ i) = toLabel i
+implLabel :: ImplName -> Attribute
+implLabel (ImplName i) = toLabel i
 
-sigID :: SigNode -> Text
-sigID (SigNode s) = s
+sigID :: SigName -> Text
+sigID (SigName s) = s
 
-sigLabel :: SigNode -> Attribute
-sigLabel (SigNode s) = toLabel s
+sigLabel :: SigName -> Attribute
+sigLabel (SigName s) = toLabel s
 
 modelNodeNode :: ModelNode -> DotStatement Text
 modelNodeNode (ModelNode m) = DN $ DotNode m [toLabel m]
-sigNodeNode :: SigNode -> DotStatement Text
+sigNodeNode :: SigName -> DotStatement Text
 sigNodeNode s = DN $ DotNode (sigID s) [sigLabel s, Shape BoxShape]
-implNodeNode :: ImplNode -> DotStatement Text
-implNodeNode i = DN $ DotNode (implID i) [implLabel i]
+implNodeNode :: ImplID -> DotStatement Text
+implNodeNode i = DN $ DotNode (implID i) [implLabel (snd i)]
 deltaModuleEdge
   :: (ModelNode, ModelNode, DeltaModule) -> DotStatement Text
 deltaModuleEdge (ModelNode m1, ModelNode m2, DeltaModule _ _ _) =
     DE $ DotEdge m1 m2 []
-sigImplEdge :: (ImplNode, SigNode) -> DotStatement Text
+sigImplEdge :: (ImplID, SigName) -> DotStatement Text
 sigImplEdge (i, s) = DE $ DotEdge (implID i) (sigID s) []
-implSigEdge :: (SigNode, ImplNode) -> DotStatement Text
+implSigEdge :: (SigName, ImplID) -> DotStatement Text
 implSigEdge (s, i) = DE $ DotEdge (sigID s) (implID i) []
+
+selectionImplIDs :: Selection -> Map SigName ImplID
+selectionImplIDs = Map.mapWithKey (\s i -> (Just s, i))
+
+implIDs :: Map SigName (Set ImplName) -> Map SigName (Set ImplID)
+implIDs = Map.mapWithKey (\s impls -> Set.map (Just s,) impls)
 
 moduleGraphToDot :: ModuleGraph -> DotGraph Text
 moduleGraphToDot (ModuleGraph impls sigs toSigs toImpls) = DotGraph
@@ -78,7 +85,7 @@ moduleGraphToDot (ModuleGraph impls sigs toSigs toImpls) = DotGraph
     , graphStatements = mconcat
         [ Seq.fromList . Set.toList . Set.map implNodeNode $ impls
         , Seq.fromList . Set.toList . Set.map sigNodeNode $ sigs
-        , Seq.fromList . fmap implSigEdge . adjToList $ toImpls
+        , Seq.fromList . fmap implSigEdge . adjToList . implIDs $ toImpls
         , Seq.fromList . fmap sigImplEdge . adjToList $ toSigs
         -- , legend
         ]

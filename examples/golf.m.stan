@@ -18,7 +18,7 @@ module "Logit" P(x) {
   return logit(a + b*x);
 }
 module "Angular" P(x) {
-  PAngle(x);
+  return PAngle(x);
 }
 module "PAngle" PAngle(x) {
   parameters {
@@ -31,7 +31,7 @@ module "PAngle" PAngle(x) {
   return p_angle;
 }
 module "AngleAndDistance" P (x) {
-  PAngle(x) + PDistance(x);
+  return PAngle(x) + PDistance(x);
 }
 module "PDistance" PDistance(x) {
   parameters {

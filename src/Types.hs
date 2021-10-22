@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -38,28 +39,27 @@ newtype ConcreteCode = ConcreteCode { unconcreteCode :: Code }
   deriving Semigroup via Code
   deriving Monoid via Code
 
-data ImplNode = ImplNode (Maybe SigNode) Text deriving (Eq, Ord, Show)
-data SigNode = SigNode Text deriving (Eq, Ord, Show)
-
 type Selection = Map SigName ImplName
 
 showSelection :: Selection -> Text
-showSelection = Text.intercalate "," . map (\(sig, impl) -> sig <> ":" <> impl) . Map.toList
+showSelection = Text.intercalate "," . map (\(SigName sig, ImplName impl) -> sig <> ":" <> impl) . Map.toList
 
 data ModularCode = ModularCode
-  { moduleInstances :: Set (SigName, Maybe InstanceName, [Expr]),
+  { moduleInstances :: Set (SigName, Maybe FieldName, [Expr]),
     modularCode :: Code
   }
   deriving (Eq, Ord, Show)
 
-data Param = Param Text deriving (Eq, Ord, Show)
+data Param = Param { unParam :: Text } deriving (Eq, Ord, Show)
 
+newtype SigName = SigName { unSigName :: Symbol } deriving (Eq, Ord, Show)
 -- Module system types
-type SigName = Symbol
+newtype FieldName = FieldName { unFieldName :: Symbol } deriving (Eq, Ord, Show)
+-- SigName.FieldName
+newtype FullSigName = FullSigName { unFullSigName :: Symbol } deriving (Eq, Ord, Show)
 
-type ImplName = Symbol
-
-type InstanceName = Symbol
+newtype ImplName = ImplName { unImplName :: Symbol } deriving (Eq, Ord, Show)
+type ImplID = (Maybe SigName, ImplName)
 
 -- Program types
 
@@ -68,29 +68,29 @@ type InstanceName = Symbol
 data ModularProgram = ModularProgram
   { signatures :: Set (Type, SigName), -- Constraints: Unique SigName
     implementations :: Set (ModuleImplementation ModularCode),
-    topFunctions :: ModularCode,
-    topBody :: ModularCode,
-    topTD :: ModularCode,
-    topGQ :: ModularCode,
+    topFunctions :: Maybe ModularCode,
     topData :: [Text],
-    topParams :: Set Param
+    topTD :: Maybe ModularCode,
+    topParams :: Set Param,
+    topBody :: ModularCode,
+    topGQ :: Maybe ModularCode
   } deriving (Show)
 
 data ModuleField code = ModuleField
   { fieldBody :: code
   , fieldArgs :: [Symbol]
-  , fieldSignature :: Maybe SigName
+  , fieldSignature :: Maybe FieldName
   }
   deriving (Eq, Ord, Show, Functor)
 
 data ModuleImplementation code = ModuleImplementation
-  { implFields :: [ModuleField code],
+  { implName :: ImplName,
+    implFields :: [ModuleField code],
     implSignature :: SigName,
     implFunctions :: Maybe code,
     implParams :: Set Param,
     implTD :: Maybe code,
-    implGQ :: Maybe code,
-    implName :: ImplName
+    implGQ :: Maybe code
   }
   deriving (Eq, Ord, Show, Functor)
 

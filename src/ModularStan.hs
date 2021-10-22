@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
 module ModularStan where
 
@@ -17,6 +18,7 @@ import           Types
 import           Parsing
 
 
+
 -- Constraint:
 -- The selection map is total for all signatures in the program
 selectModules :: ModularProgram -> Map SigName ImplName -> ConcreteProgram
@@ -25,17 +27,17 @@ selectModules program selectionNames = ConcreteProgram
     , concreteParams    = Set.unions
                           $ topParams program
                           : map implParams concreteModules
-    , concreteTD        = (concretizeCode (topTD program) <>)
+    , concreteTD        = ((fromMaybe mempty (concretizeCode <$> topTD program)) <>)
                           . foldl' (<>) mempty
                           . catMaybes
                           . map implTD
                           $ concreteModules
-    , concreteGQ        = (concretizeCode (topGQ program) <>)
+    , concreteGQ        = ((fromMaybe mempty (concretizeCode <$> topGQ program)) <>)
                           . foldl' (<>) mempty
                           . catMaybes
                           . map implGQ
                           $ concreteModules
-    , concreteFunctions = (concretizeCode (topFunctions program) <>)
+    , concreteFunctions = ((fromMaybe mempty (concretizeCode <$> topFunctions program)) <>)
                           . foldl' (<>) mempty
                           . catMaybes
                           . map implFunctions
@@ -61,9 +63,9 @@ selectModules program selectionNames = ConcreteProgram
                     Nothing ->
                         error
                             $  "Could not find implementation \""
-                            ++ Text.unpack implName'
+                            ++ Text.unpack (unImplName implName')
                             ++ "\" of signature \""
-                            ++ Text.unpack sigName'
+                            ++ Text.unpack (unSigName sigName')
                             ++ "\""
                     Just found -> found
         )
@@ -100,20 +102,39 @@ selectModules program selectionNames = ConcreteProgram
 2. Replace with return expression or nothing
 -}
 
+-- orderModuleApplication :: Set (SigName, Maybe FieldName, [Expr]) -> [(SigName, Maybe FieldName, [Expr])]
+-- orderModuleApplication set = sortedApplications
+--   where
+--     toFullSig (sig, field, _) = fullSigName (sig, field)
+--     signatures = Set.toList $ Set.map toFullSig set
+--     -- The list of signatures that an application's arguments depend on
+--     children (_, _, args) = flip concatMap args $ \(Expr arg) ->
+--       filter (isJust . flip parseSigLine arg) signatures
+--     (graph, fromVertex, _) =
+--         Graph.graphFromEdges
+--             . map
+--                   (\app ->
+--                       (app, toFullSig app, children app)
+--                   )
+--             $ Set.toList set
+--     vertices = Graph.topSort graph
+--     sortedApplications =
+--         reverse . map ((\(app, _, _) -> app) . fromVertex) $ vertices
+
 applyImplementations
-    :: Map SigName (ModuleField ConcreteCode) -> ModularCode -> ConcreteCode
-applyImplementations sigImpls code = ConcreteCode $ Set.fold
-    (\(sigName, _, exprs) ccode ->
-        let impl = case Map.lookup sigName sigImpls of
+    :: Map FullSigName (ModuleField ConcreteCode) -> ModularCode -> ConcreteCode
+applyImplementations sigImpls code = ConcreteCode $ foldr
+    (\(sigName, fieldName, exprs) ccode ->
+        let fullSig = fullSigName (sigName, fieldName)
+            impl = case Map.lookup fullSig sigImpls of
                 Just impl -> impl
                 Nothing ->
                     error
                         $  "can't find signature "
-                        ++ Text.unpack sigName
+                        ++ Text.unpack (unFullSigName fullSig)
                         ++ "\n"
                         ++ (unlines $ [show sigImpls, show code])
-        in  applyImplementation sigName
-                                exprs
+        in  applyImplementation fullSig
                                 (fieldArgs impl)
                                 (fieldBody impl)
                                 ccode
@@ -122,13 +143,13 @@ applyImplementations sigImpls code = ConcreteCode $ Set.fold
     (moduleInstances code)
 
 applyImplementation
-    :: SigName -> [Expr] -> [Symbol] -> ConcreteCode -> Code -> Code
-applyImplementation sigName args argNames (ConcreteCode implBody) code = code
+    :: FullSigName -> [Symbol] -> ConcreteCode -> Code -> Code
+applyImplementation fullSig argNames (ConcreteCode implBody) code = code
     { codeText   = codeText' <> returnPrepLines
     , codeReturn = codeReturn'
     }
   where
-    assignmentLines =
+    assignmentLines args =
         map (\(argName, Expr arg) -> argName <> " = " <> arg <> ";")
             . filter
                   (\(argName, Expr arg) -> (last . Text.words $ argName) /= arg)
@@ -140,10 +161,10 @@ applyImplementation sigName args argNames (ConcreteCode implBody) code = code
                   args
               )
     insertByLine :: Text -> ([Text], Maybe Text)
-    insertByLine line = case parseSigLine sigName line of
+    insertByLine line = case parseSigLine fullSig line of
         Nothing -> ([], Just line)
-        Just (_, rebuildLine) ->
-            ( assignmentLines <> codeText implBody -- set arguments here?
+        Just (args, rebuildLine) ->
+            ( assignmentLines args <> codeText implBody -- set arguments here?
             , maybe Nothing
                     (\return -> Just (rebuildLine return))
                     (codeReturn implBody)
@@ -186,32 +207,28 @@ applyImplementation sigName args argNames (ConcreteCode implBody) code = code
 
 splitModulesIntoFields
     :: Map SigName (ModuleImplementation ModularCode)
-    -> Map SigName (ModuleField ModularCode)
+    -> Map FullSigName (ModuleField ModularCode)
 splitModulesIntoFields =
     Map.fromList . concatMap splitModuleIntoList . Map.toList
   where
     splitModuleIntoList (moduleSig, moduleImpl) =
-        let sig field = maybe moduleSig
-                              (\fieldSig -> moduleSig <> "." <> fieldSig)
-                              (fieldSignature field)
-        in  [ (sig field, field) | field <- implFields moduleImpl ]
+        [ (fullSigName (moduleSig, fieldSignature field), field) | field <- implFields moduleImpl ]
 
 topologicallyOrderSignatures
-    :: Map SigName (ModuleField ModularCode) -> [SigName]
-topologicallyOrderSignatures impls = reverse sortedSigs
+    :: Map FullSigName (ModuleField ModularCode) -> [FullSigName]
+topologicallyOrderSignatures impls = sortedSigs
   where
-    children = map (\(sigName, _, _) -> sigName) . Set.toList . moduleInstances
+    children = map (\(sigName, fieldName, _) -> fullSigName (sigName, fieldName)) . Set.toList . moduleInstances
     (graph, fromVertex, _) =
         Graph.graphFromEdges
             . map
                   (\(sigName, impl) ->
                       (sigName, sigName, children (fieldBody impl))
                   )
-            . Map.toList
-            $ impls
+            $ Map.toList impls
     vertices = Graph.topSort graph
     sortedSigs =
-        map (\v -> let (sigName, _, _) = fromVertex v in sigName) vertices
+        reverse . map ((\(sigName, _, _) -> sigName) . fromVertex) $ vertices
 
 
 -- Nouns:
@@ -220,7 +237,7 @@ topologicallyOrderSignatures impls = reverse sortedSigs
 type ModuleSignature = (Type, SigName)
 
 -- Module instantiation
-type ModuleInstantiation = (SigName, InstanceName, [Expr])
+type ModuleInstantiation = (SigName, Maybe FieldName, [Expr])
 
 -- Module implementation
 type ModuleImplementation' = ModuleImplementation
@@ -267,14 +284,14 @@ drawTree level root next other showA showB = do
 
 drawModuleTree :: ModularProgram -> IO ()
 drawModuleTree p = drawTree 0
-                            (ImplNode Nothing "root")
+                            (Nothing, ImplName "root")
                             (implSigs p)
-                            (sigImpls p)
-                            (\(ImplNode _ a) -> "[" <> a <> "]")
-                            (\(SigNode a) -> "{" <> a <> "}")
+                            (sigImplsAddImplIDs $ sigImpls p)
+                            (\(_, ImplName a) -> "[" <> a <> "]")
+                            (\(SigName a) -> "{" <> a <> "}")
   -- where
     -- sigs = Map.insert (ImplNode Nothing "root") (codeSigs (topBody p)) implSigs
-    -- codeSigs = Set.map (\(sig, _, _) -> SigNode sig) . moduleInstances
+    -- codeSigs = Set.map (\(sig, _, _) -> SigName sig) . moduleInstances
 
     -- implSigs =
     --     Map.fromList
@@ -291,15 +308,15 @@ drawModuleTree p = drawTree 0
     --         $ groupBy (\x y -> implSignature x == implSignature y)
     --                   (Set.toList $ implementations p)
 
-sigImpls :: ModularProgram -> Map SigNode (Set ImplNode)
+sigImpls :: ModularProgram -> Map SigName (Set ImplName)
 sigImpls p =
     Map.fromList
         . map
               (\impls ->
-                  let sig = SigNode $ implSignature (head impls)
+                  let sig = implSignature (head impls)
                   in  ( sig
                       , Set.fromList
-                          $ map (ImplNode (Just sig) . implName) impls
+                          $ map (implName) impls
                       )
               )
         . groupBy (\x y -> implSignature x == implSignature y)
@@ -307,55 +324,53 @@ sigImpls p =
         . Set.toList
         $ implementations p
 
-implSigs :: ModularProgram -> Map ImplNode (Set SigNode)
+implSigs :: ModularProgram -> Map ImplID (Set SigName)
 implSigs p = implSigs'
   where
-    codeSigs = Set.map (\(sig, _, _) -> SigNode sig) . moduleInstances
+    codeSigs = Set.map (\(SigName sig, _, _) -> SigName sig) . moduleInstances
     implSigs =
         Map.fromList
             . map
                   (\impl ->
-                      ( ImplNode (Just . SigNode $ implSignature impl)
-                          $ implName impl
+                      ( (Just (implSignature impl), implName impl)
                       , Set.unions $ map (codeSigs . fieldBody) $ implFields
                           impl
                       )
                   )
             $ (Set.toList $ implementations p)
     implSigs' =
-        Map.insert (ImplNode Nothing "root") (codeSigs (topBody p)) implSigs
+        Map.insert (Nothing, ImplName "root") (codeSigs (topBody p)) implSigs
 
 moduleTreeGraph :: ModularProgram -> Graph
 moduleTreeGraph p = moduleGraphToDot
     (ModuleGraph allImpls allSigs (implSigs p) (sigImpls p))
   where
-    allSigs  = Set.map (\(_, sig) -> SigNode sig) (signatures p)
-    allImpls = Set.insert (ImplNode Nothing "root") $ Set.map
-        (\impl -> ImplNode (Just . SigNode $ implSignature impl) $ implName impl
-        )
+    allSigs  = Set.map (\(_, SigName sig) -> SigName sig) (signatures p)
+    allImpls = Set.insert (Nothing, ImplName "root") $ Set.map
+        (\impl -> (Just (implSignature impl), implName impl))
         (implementations p)
 
 productSelectionSets
-    :: [Set (Map SigNode ImplNode)] -> Set (Map SigNode ImplNode)
+    :: [Set Selection] -> Set Selection
 productSelectionSets = foldl1 multiplySelectionSets
 
 multiplySelectionSets
-    :: Set (Map SigNode ImplNode)
-    -> Set (Map SigNode ImplNode)
-    -> Set (Map SigNode ImplNode)
+    :: Set Selection
+    -> Set Selection
+    -> Set Selection
 multiplySelectionSets s1 s2 =
     Set.fromList (liftA2 Map.union (Set.toList s1) (Set.toList s2))
 
--- productSels :: [Set (Map SigNode ImplNode)] -> Set (Map SigNode ImplNode)
+-- productSels :: [Set (Map SigName ImplNode)] -> Set (Map SigName ImplNode)
 -- productSels [] = Set.empty
 -- productSels [s] = s
 -- productSels (s1 : s2 : ss) = Set.union (productSels ss) $ Set.fromList (liftA2 Map.union (Set.toList s1) (Set.toList s2))
 
 allImplSels
-    :: Map ImplNode (Set SigNode)
-    -> Map SigNode (Set ImplNode)
-    -> ImplNode
-    -> Set (Map SigNode ImplNode)
+    :: Map ImplID (Set SigName)
+    -> Map SigName (Set ImplName)
+    -> ImplID
+    -> Set Selection
 allImplSels iToS sToI impl = productSelectionSets (Set.toList sigMaps')
   where
     sigs     = fromJust . Map.lookup impl $ iToS
@@ -365,26 +380,26 @@ allImplSels iToS sToI impl = productSelectionSets (Set.toList sigMaps')
         else sigMaps
 
 allSigSels
-    :: Map ImplNode (Set SigNode)
-    -> Map SigNode (Set ImplNode)
-    -> SigNode
-    -> Set (Map SigNode ImplNode)
-allSigSels iToS sToI sig =
+    :: Map ImplID (Set SigName)
+    -> Map SigName (Set ImplName)
+    -> SigName
+    -> Set Selection
+allSigSels iToS sToI sig = Set.map (Map.map snd) $
     Set.unions
         . Set.map (\(impl, implSels) -> Set.map (Map.insert sig impl) implSels)
         $ implMaps
   where
-    impls    = fromJust . Map.lookup sig $ sToI
-    implMaps = Set.map (\impl -> (impl, allImplSels iToS sToI impl)) impls
+    impls    = Set.map (Just sig,) . fromJust . Map.lookup sig $ sToI
+    implMaps = Set.map (\impl -> (impl, Set.map selectionAddImplIDs $ allImplSels iToS sToI impl)) impls
 
-allSelections :: ModularProgram -> Set (Map SigNode ImplNode)
+allSelections :: ModularProgram -> Set Selection
 allSelections p =
-    allImplSels (implSigs p) (sigImpls p) (ImplNode Nothing "root")
+    allImplSels (implSigs p) (sigImpls p) (Nothing, ImplName "root")
 
 offByOne
-    :: Map SigNode ImplNode
-    -> Map SigNode ImplNode
-    -> Maybe (SigNode, ImplNode, ImplNode)
+    :: Selection
+    -> Selection
+    -> Maybe (SigName, ImplName, ImplName)
 offByOne m1 m2 = case inters of
     [inter] -> Just inter
     _       -> Nothing
@@ -394,13 +409,15 @@ offByOne m1 m2 = case inters of
         m1
         m2
 
-selectionToNodes :: Selection -> Map SigNode ImplNode
-selectionToNodes = Map.mapKeys SigNode
-    . Map.mapWithKey (\sig impl -> ImplNode (Just (SigNode sig)) impl)
+sigImplsAddImplIDs :: Map SigName (Set ImplName) -> Map SigName (Set ImplID)
+sigImplsAddImplIDs = Map.mapWithKey (\sig impls -> Set.map (Just sig,) impls)
 
-nodesToSelection :: Map SigNode ImplNode -> Selection
-nodesToSelection =
-    Map.mapKeys (\(SigNode sig) -> sig) . Map.map (\(ImplNode _ impl) -> impl)
+selectionAddImplIDs :: Selection -> Map SigName ImplID
+selectionAddImplIDs = Map.mapWithKey (\sig impl -> (Just sig, impl))
+
+-- nodesToSelection :: Map SigName ImplNode -> Selection
+-- nodesToSelection =
+--     Map.mapKeys (\(SigName sig) -> SigName sig) . Map.map (\(ImplNode _ impl) -> ImplName impl)
 
 modelTreeGraph :: ModularProgram -> Graph
 modelTreeGraph p = modelGraphToDot (modelTree p)
@@ -413,28 +430,27 @@ modelTree p = (ModelGraph allModels modelEdges)
     allModels = Set.fromList . map (ModelNode . fst) $ allSel
     modelEdges =
         [ (ModelNode n1, ModelNode n2, DeltaModule s i1 i2)
-        | (n1, n2, (SigNode s, ImplNode _ i1, ImplNode _ i2)) <- mapMaybe
+        | (n1, n2, (SigName s, ImplName i1, ImplName i2)) <- mapMaybe
             (\((n1, s1), (n2, s2)) -> (\x -> (n1, n2, x)) <$> offByOne s1 s2)
             ((,) <$> allSel <*> allSel)
         ]
 
 arbitrarySelection :: ModularProgram -> Selection
-arbitrarySelection = nodesToSelection . Set.findMin . allSelections
+arbitrarySelection = Set.findMin . allSelections
 
 modelNeighbors :: ModularProgram -> Selection -> Set Selection
 modelNeighbors prog s1 =
-    Set.map nodesToSelection
-        . Set.filter (\s2 -> isJust (selectionToNodes s1 `offByOne` s2))
+        Set.filter (\s2 -> isJust (s1 `offByOne` s2))
         $ allSelections prog
 
-showSels :: Set (Map SigNode ImplNode) -> Text
+showSels :: Set Selection -> Text
 showSels =
     Text.intercalate "-------------------------\n" . map showSel . Set.toList
 
-showSel :: Map SigNode ImplNode -> Text
+showSel :: Selection -> Text
 showSel =
     Text.unlines
-        . map (\(SigNode sig, ImplNode _ impl) -> sig <> ": " <> impl)
+        . map (\(SigName sig, ImplName impl) -> sig <> ": " <> impl)
         . Map.toList
 
 
