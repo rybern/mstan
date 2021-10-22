@@ -19,6 +19,8 @@ import           Parsing
 
 
 
+
+
 -- Constraint:
 -- The selection map is total for all signatures in the program
 selectModules :: ModularProgram -> Map SigName ImplName -> ConcreteProgram
@@ -102,29 +104,30 @@ selectModules program selectionNames = ConcreteProgram
 2. Replace with return expression or nothing
 -}
 
--- orderModuleApplication :: Set (SigName, Maybe FieldName, [Expr]) -> [(SigName, Maybe FieldName, [Expr])]
--- orderModuleApplication set = sortedApplications
---   where
---     toFullSig (sig, field, _) = fullSigName (sig, field)
---     signatures = Set.toList $ Set.map toFullSig set
---     -- The list of signatures that an application's arguments depend on
---     children (_, _, args) = flip concatMap args $ \(Expr arg) ->
---       filter (isJust . flip parseSigLine arg) signatures
---     (graph, fromVertex, _) =
---         Graph.graphFromEdges
---             . map
---                   (\app ->
---                       (app, toFullSig app, children app)
---                   )
---             $ Set.toList set
---     vertices = Graph.topSort graph
---     sortedApplications =
---         reverse . map ((\(app, _, _) -> app) . fromVertex) $ vertices
+orderModuleApplication :: Set (SigName, Maybe FieldName, [Expr]) -> Maybe [(SigName, Maybe FieldName, [Expr])]
+orderModuleApplication set = Just sortedApplications
+  where
+    toFullSig (sig, field, _) = fullSigName (sig, field)
+    signatures = Set.toList $ Set.map toFullSig set
+    -- The list of signatures that an application's arguments depend on
+    children (_, _, args) = flip concatMap args $ \(Expr arg) ->
+      filter (isJust . flip parseSigLine arg) signatures
+    (graph, fromVertex, _) =
+        Graph.graphFromEdges
+            . map
+                  (\app ->
+                      (app, toFullSig app, children app)
+                  )
+            $ Set.toList set
+    vertices = Graph.topSort graph
+    sortedApplications =
+        reverse . map ((\(app, _, _) -> app) . fromVertex) $ vertices
 
 applyImplementations
     :: Map FullSigName (ModuleField ConcreteCode) -> ModularCode -> ConcreteCode
-applyImplementations sigImpls code = ConcreteCode $ foldr
-    (\(sigName, fieldName, exprs) ccode ->
+applyImplementations sigImpls code =
+  ConcreteCode $ foldl
+    (\ccode (sigName, fieldName, exprs) ->
         let fullSig = fullSigName (sigName, fieldName)
             impl = case Map.lookup fullSig sigImpls of
                 Just impl -> impl
@@ -134,22 +137,24 @@ applyImplementations sigImpls code = ConcreteCode $ foldr
                         ++ Text.unpack (unFullSigName fullSig)
                         ++ "\n"
                         ++ (unlines $ [show sigImpls, show code])
-        in  applyImplementation fullSig
-                                (fieldArgs impl)
+        in  applyImplementation (argumentStrategy (fieldArgs impl))
+                                fullSig
                                 (fieldBody impl)
                                 ccode
     )
     (modularCode code)
-    (moduleInstances code)
+    order
+  where (order, argumentStrategy) = case orderModuleApplication (moduleInstances code) of
+          Nothing -> (Set.toList $ moduleInstances code, argumentAssignmentStrategy)
+          Just order -> (order, argumentPropagationStrategy)
 
-applyImplementation
-    :: FullSigName -> [Symbol] -> ConcreteCode -> Code -> Code
-applyImplementation fullSig argNames (ConcreteCode implBody) code = code
-    { codeText   = codeText' <> returnPrepLines
-    , codeReturn = codeReturn'
-    }
+-- When we can topologically sort module application by argument structure, we can propagate expressions. Otherwise we have to make a new variable for each argument.
+
+argumentAssignmentStrategy :: [Symbol] -> [Expr] -> Code -> Code
+argumentAssignmentStrategy argNames args implCode =
+  implCode { codeText = assignmentLines <> codeText implCode }
   where
-    assignmentLines args =
+    assignmentLines =
         map (\(argName, Expr arg) -> argName <> " = " <> arg <> ";")
             . filter
                   (\(argName, Expr arg) -> (last . Text.words $ argName) /= arg)
@@ -160,15 +165,58 @@ applyImplementation fullSig argNames (ConcreteCode implBody) code = code
                   )
                   args
               )
+
+-- We need to wrap the expression in () sometimes
+-- Needed for anything other than parentheticals, vars, or juxtapositions thereof
+argumentPropagationStrategy :: [Symbol] -> [Expr] -> Code -> Code
+argumentPropagationStrategy argNames args implCode = Code
+  { codeReturn = Expr . replaceAllArgs . unExpr <$> codeReturn implCode
+  , codeText = map replaceAllArgs $ codeText implCode }
+  where replaceAllArgs line = foldl
+                 (\line (argName, arg) -> snd . replaceCountVar argName (unExpr . maybeAddParens $ arg) $ line)
+                 line
+                 $ zip argNames args
+
+applyImplementation
+    :: ([Expr] -> Code -> Code) -> FullSigName -> ConcreteCode -> Code -> Code
+applyImplementation argumentStrategy fullSig (ConcreteCode implCode) code = code
+    { codeText   = codeText' <> returnPrepLines
+    , codeReturn = codeReturn'
+    }
+  where
+    -- We probably actually need to parse the same line multiple times to find more than one instance
     insertByLine :: Text -> ([Text], Maybe Text)
     insertByLine line = case parseSigLine fullSig line of
+        -- No signature found
         Nothing -> ([], Just line)
-        Just (args, rebuildLine) ->
-            ( assignmentLines args <> codeText implBody -- set arguments here?
-            , maybe Nothing
-                    (\return -> Just (rebuildLine return))
-                    (codeReturn implBody)
-            )
+        Just (args, maybeRebuildWithExpression) ->
+         let inlinedImplCode = argumentStrategy args implCode
+             rebuiltLine = case (maybeRebuildWithExpression, codeReturn inlinedImplCode) of
+               -- Signature being used as a statement, impl has no return
+               (Nothing, Nothing) -> Nothing
+               -- Signature being used as an expression, impl has return
+               (Just rebuildLine, Just returnExpr) -> Just (rebuildLine returnExpr)
+               -- Signature being used as a statement, but impl has return
+               (Nothing, Just _) ->
+                 error $ concat
+                        [ "Type error: in line \""
+                        , Text.unpack line
+                        , "\" signature "
+                        , Text.unpack (unFullSigName fullSig)
+                        , " is used as though it does not return an expression, but it does."
+                        ]
+               -- Signature being used as an expression, but impl has no return
+               (Just _, Nothing) ->
+                 error $ concat
+                        [ "Type error: in line \""
+                        , Text.unpack line
+                        , "\" signature "
+                        , Text.unpack (unFullSigName fullSig)
+                        , " is used as though it returns an expression, but it does not."
+                        ]
+         in (codeText inlinedImplCode, rebuiltLine)
+    -- perform the replacement on the return expression
+    -- the return expression won't be identified as a statement because it has no semicolon
     (returnPrepLines, codeReturn') =
         case (insertByLine . unExpr) <$> codeReturn code of
             Nothing -> ([], Nothing)

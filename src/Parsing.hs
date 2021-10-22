@@ -14,6 +14,8 @@ import qualified Data.Set                      as Set
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 import qualified Data.Text.IO                  as Text
+import           Data.Function
+import           Data.Char
 
 import           Types
 import           Prelude                 hiding ( takeWhile )
@@ -34,17 +36,73 @@ parserSelections = do
     pairs <- sepBy pair ","
     return $ Map.fromList pairs
 
-parseSigLine :: FullSigName -> Text -> Maybe ([Expr], Expr -> Text)
+parseSigLine :: FullSigName -> Text -> Maybe ([Expr], Maybe (Expr -> Text))
 parseSigLine sigName line = case parseOnly (parserSigLine sigName) line of
     Left  _   -> Nothing
     Right res -> Just res
 
-parserSigLine :: FullSigName -> Parser ([Expr], Expr -> Text)
-parserSigLine (FullSigName sigName) = do
-    left  <- manyTill anyChar $ string sigName
-    args  <- parserArgs
-    right <- many' anyChar
-    return (args, \(Expr x) -> Text.pack left <> x <> Text.pack right)
+parserSigLine :: FullSigName -> Parser ([Expr], Maybe (Expr -> Text))
+parserSigLine (FullSigName sigName) = choice
+  [ do
+      left <- manyTill anyChar $ char '~'
+      let samplee = Expr . Text.strip . Text.pack $ left
+      skipSpace
+      string sigName
+      skipSpace
+      args  <- parserArgs
+      skipSpace
+      char ';'
+      return (samplee : args, Nothing)
+  , do
+      skipSpace
+      string sigName
+      skipSpace
+      args  <- parserArgs
+      skipSpace
+      char ';'
+      return (args, Nothing)
+  , do
+      left  <- manyTill anyChar $ string sigName
+      skipSpace
+      args  <- parserArgs
+      right <- many' anyChar
+      return (args, Just $ \(Expr x) -> Text.pack left <> x <> Text.pack right)
+  ]
+
+parseVar :: Parser Text
+parseVar = do
+  skipSpace
+  content <- takeWhile isVariableChar
+  skipSpace
+  return content
+
+parseParenthetical :: Parser [Expr]
+parseParenthetical = do
+  skipSpace
+  content <- parserArgs
+  skipSpace
+  return content
+
+needsParentheses :: Text -> Bool
+needsParentheses line = case parseOnly boundParser line of
+    Left  _ -> True
+    Right _ -> False
+  where boundParser = do
+          try parseVar
+          try parseParenthetical
+          endOfInput
+
+maybeAddParens :: Expr -> Expr
+maybeAddParens (Expr e) = Expr $ if needsParentheses e then "(" <> e <> ")" else e
+
+isVariableChar :: Char -> Bool
+isVariableChar c = isAlphaNum c || c == '_'
+
+replaceCountVar :: Text -> Text -> Text -> (Int, Text)
+replaceCountVar var var' line = (count, line')
+  where tokens = Text.groupBy ((==) `on` isVariableChar) line
+        count = length . filter (== var) $ tokens
+        line' = Text.concat . map (\word -> if word == var then var' else word) $ tokens
 
 parserArgs :: Parser [Expr]
 parserArgs = do
@@ -71,7 +129,7 @@ parserTilClosed open = do
 tests :: IO ()
 tests = mapM_
     (\(sig, code) -> do
-        let Just (args, f) = parseSigLine (FullSigName sig) code
+        let Just (args, Just f) = parseSigLine (FullSigName sig) code
         putStrLn $ "----------"
         putStrLn $ "code \"" ++ Text.unpack code ++ "\""
         putStrLn $ "sig \"" ++ Text.unpack sig ++ "\""
