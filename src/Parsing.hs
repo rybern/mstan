@@ -226,6 +226,12 @@ parserFunctions = do
     (_, functions) <- parserBlock (string "functions") (parserCode 2)
     return functions
 
+parserTP :: Parser Code
+parserTP = do
+    ignore
+    (_, tp) <- parserBlock (string "transformed parameters") (parserCode 2)
+    return tp
+
 parserTD :: Parser Code
 parserTD = do
     ignore
@@ -260,13 +266,13 @@ parserFields = many1' parserField
 
 parserAssociatedModule :: Parser (ModuleImplementation Code)
 parserAssociatedModule = do
-    ((implName, implSignature, ()), (implFunctions, implParams, implTD, implGQ, implFields)) <-
+    ((implName, implSignature, ()), (implFunctions, implParams, implTD, implTP, implGQ, implFields)) <-
         parserBlock (moduleHead (return ())) (moduleBody parserFields)
     return $ ModuleImplementation { .. }
 
 parserSingletonModule :: Parser (ModuleImplementation Code)
 parserSingletonModule = do
-    ((implName, implSignature, implArgs), (implFunctions, implParams, implTD, implGQ, implBody)) <-
+    ((implName, implSignature, implArgs), (implFunctions, implParams, implTD, implTP, implGQ, implBody)) <-
         parserBlock (moduleHead moduleArgs) (moduleBody (parserCode 1))
     let implFields =
             [ ModuleField { fieldBody      = implBody
@@ -298,7 +304,7 @@ moduleHead parseArgs = do
 
 moduleBody
     :: Parser body
-    -> Parser (Maybe Code, Set Param, Maybe Code, Maybe Code, body)
+    -> Parser (Maybe Code, Set Param, Maybe Code, Maybe Code, Maybe Code, body)
 moduleBody parseBody = do
     implFunctions <- option Nothing (Just <$> parserFunctions)
     ignore
@@ -306,10 +312,12 @@ moduleBody parseBody = do
     ignore
     implParams <- option Set.empty parserParams
     ignore
+    implTP <- option Nothing (Just <$> parserTP)
+    ignore
     implGQ <- option Nothing (Just <$> parserGQ)
     ignore
     implBody <- parseBody
-    return (implFunctions, implParams, implTD, implGQ, implBody)
+    return (implFunctions, implParams, implTD, implTP, implGQ, implBody)
 
 findModules :: Set (SigName, Maybe FieldName) -> Code -> ModularCode
 findModules signatures code = ModularCode
@@ -357,7 +365,7 @@ ignore = do
         skipSpace
     return ()
 
-parserTop :: Parser (Maybe Code, [Text], Set Param, Maybe Code, Code, Maybe Code)
+parserTop :: Parser (Maybe Code, [Text], Set Param, Maybe Code, Maybe Code, Code, Maybe Code)
 parserTop = do
     ignore
     (_, functionsCode) <- option ("", Nothing) $ try $ parserBlock
@@ -373,6 +381,10 @@ parserTop = do
     ignore
     topParams <- option Set.empty parserParams
     ignore
+    (_, tpCode) <- option ("", Nothing) $ try $ parserBlock
+        "transformed parameters"
+        (Just <$> parserCode 1)
+    ignore
     (_, modelCode) <- option ("", Code [] Nothing) $ try $ parserBlock
         "model"
         (parserCode 1)
@@ -382,7 +394,7 @@ parserTop = do
         (Just <$> parserCode 1)
     ignore
     return
-        (functionsCode, codeText dataCode, topParams, tdCode, modelCode, gqCode)
+        (functionsCode, codeText dataCode, topParams, tdCode, tpCode, modelCode, gqCode)
 
 fieldSignatures :: ModuleImplementation code -> Set (SigName, Maybe FieldName)
 fieldSignatures moduleImpl =
@@ -391,7 +403,7 @@ fieldSignatures moduleImpl =
 parserModularProgram :: Parser ModularProgram
 parserModularProgram = do
     ignore
-    (topFunctions, dataVars, topParams, tdCode, modelCode, gqCode) <- parserTop
+    (topFunctions, dataVars, topParams, tdCode, tpCode, modelCode, gqCode) <- parserTop
     ignore
     implementations <- many' (parserModule <* ignore)
     let signatures = Set.unions $ map fieldSignatures implementations
@@ -402,6 +414,7 @@ parserModularProgram = do
         , topBody         = findModules signatures modelCode
         , topFunctions    = findModules signatures <$> topFunctions
         , topTD           = findModules signatures <$> tdCode
+        , topTP           = findModules signatures <$> tpCode
         , topGQ           = findModules signatures <$> gqCode
         , topData         = dataVars
         , topParams       = topParams

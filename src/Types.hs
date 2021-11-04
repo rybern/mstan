@@ -72,6 +72,7 @@ data ModularProgram = ModularProgram
     topData :: [Text],
     topTD :: Maybe ModularCode,
     topParams :: Set Param,
+    topTP :: Maybe ModularCode,
     topBody :: ModularCode,
     topGQ :: Maybe ModularCode
   } deriving (Show)
@@ -90,6 +91,7 @@ data ModuleImplementation code = ModuleImplementation
     implFunctions :: Maybe code,
     implParams :: Set Param,
     implTD :: Maybe code,
+    implTP :: Maybe code,
     implGQ :: Maybe code
   }
   deriving (Eq, Ord, Show, Functor)
@@ -100,5 +102,6 @@ data ConcreteProgram = ConcreteProgram
     concreteData :: [Text],
     concreteParams :: Set Param,
     concreteTD :: ConcreteCode,
+    concreteTP :: ConcreteCode,
     concreteGQ :: ConcreteCode
   } deriving Show

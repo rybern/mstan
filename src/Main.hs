@@ -5,6 +5,7 @@ import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 import qualified Data.Text.IO                  as Text
 import qualified Data.Set                      as Set
+import Control.Monad
 -- import qualified Data.Map                      as Map
 
 import Parsing
@@ -14,7 +15,7 @@ import ToGraph
 import Types
 import CLI
 import GraphServer
--- import DiagnosticPrinting
+import DiagnosticPrinting
 
 main :: IO ()
 main = do
@@ -24,10 +25,10 @@ main = do
 
 execOptions :: RunOptions -> IO ()
 execOptions (Server serverOptions) = runGraphServer serverOptions
-execOptions (Exec file maybeOutFile command) = do
+execOptions (Exec file debugParse maybeOutFile command) = do
     program <- Parsing.readModularProgram file
     -- print program
-    -- printModularProgram program
+    when (debugParse == DebugParse) $ printModularProgram program
     result <- Text.unlines <$> execCommand program command
     case maybeOutFile of
       Nothing -> Text.putStr result

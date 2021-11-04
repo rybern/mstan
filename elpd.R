@@ -28,7 +28,7 @@ print(cmdstan_version())
 model <- cmdstan_model(stan_file = stanfile, quiet=TRUE)
 
 fit <- model$sample(data = standata, iter_warmup=50, iter_sampling=50,
-                          chains=10, parallel_chains=10, seed=3891)
+                          chains=10, parallel_chains=10, seed=1)
 loo <- fit$loo()
 
 elpd_estimate <- loo$estimates['elpd_loo', 'Estimate']

@@ -173,7 +173,7 @@ module "model2" Model() {
   yn ~ normal_id_glm(PHI_f,
                      intercept,
                      append_row(diagSPD_f1 .* beta_f1, diagSPD_f2 .* beta_f2),
-                     sigma); 
+                     sigma);
 }
 
 module "model3" Model() {
@@ -1048,3 +1048,133 @@ module "model8rhs" Model() {
                      append_row(diagSPD_f1 .* beta_f1, diagSPD_f2 .* beta_f2),
                      sigma);
 }
+
+
+/* named modular: */
+/*
+Chain 8 finished in 162.7 seconds.
+Chain 2 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 2 finished in 159.1 seconds.
+Chain 3 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 3 finished in 176.3 seconds.
+Chain 4 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 4 finished in 174.5 seconds.
+Chain 7 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 7 finished in 181.0 seconds.
+Chain 10 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 1 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 10 finished in 183.3 seconds.
+Chain 1 finished in 177.9 seconds.
+Chain 5 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 5 finished in 183.9 seconds.
+Chain 6 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 6 finished in 180.6 seconds.
+
+All 10 chains finished successfully.
+Mean chain execution time: 158.0 seconds.
+Total execution time: 184.6 seconds.
+
+Warning: 50 of 500 (10.0%) transitions ended with a divergence.
+This may indicate insufficient exploration of the posterior distribution.
+Possible remedies include: 
+  * Increasing adapt_delta closer to 1 (default is 0.8) 
+  * Reparameterizing the model (e.g. using a non-centered parameterization)
+  * Using informative or weakly informative prior distributions 
+
+Warning message:
+Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+ 
+6849.98275614093
+*/
+
+
+/* model modular: */
+/*
+Chain 6 finished in 45.7 seconds.
+Chain 5 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 5 finished in 46.4 seconds.
+Chain 3 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 3 finished in 49.4 seconds.
+Chain 10 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 10 finished in 50.3 seconds.
+Chain 8 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 4 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 8 finished in 50.9 seconds.
+Chain 4 finished in 51.1 seconds.
+Chain 2 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 7 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 2 finished in 48.0 seconds.
+Chain 7 finished in 51.5 seconds.
+Chain 1 Iteration: 51 / 100 [ 51%]  (Sampling) 
+Chain 1 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 1 finished in 59.9 seconds.
+
+All 10 chains finished successfully.
+Mean chain execution time: 45.8 seconds.
+Total execution time: 65.3 seconds.
+
+Warning: 50 of 500 (10.0%) transitions ended with a divergence.
+This may indicate insufficient exploration of the posterior distribution.
+Possible remedies include: 
+  * Increasing adapt_delta closer to 1 (default is 0.8) 
+  * Reparameterizing the model (e.g. using a non-centered parameterization)
+  * Using informative or weakly informative prior distributions 
+
+50 of 500 (10.0%) transitions hit the maximum treedepth limit of 10 or 2^10-1 leapfrog steps.
+Trajectories that are prematurely terminated due to this limit will result in slow exploration.
+Increasing the max_treedepth limit can avoid this at the expense of more computation.
+If increasing max_treedepth does not remove warnings, try to reparameterize the model.
+
+Warning message:
+Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+ 
+6033.43866687506
+ */
+
+
+/* named modular with TD  */
+/*
+Chain 3 finished in 21.6 seconds.
+Chain 5 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 5 finished in 25.1 seconds.
+Chain 1 Iteration: 51 / 100 [ 51%]  (Sampling) 
+Chain 10 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 10 finished in 26.1 seconds.
+Chain 4 Iteration: 51 / 100 [ 51%]  (Sampling) 
+Chain 2 Iteration: 51 / 100 [ 51%]  (Sampling) 
+Chain 6 Iteration: 51 / 100 [ 51%]  (Sampling) 
+Chain 8 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 8 finished in 35.1 seconds.
+Chain 7 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 7 finished in 37.8 seconds.
+Chain 1 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 1 finished in 33.1 seconds.
+Chain 2 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 2 finished in 33.8 seconds.
+Chain 4 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 4 finished in 36.2 seconds.
+Chain 6 Iteration: 100 / 100 [100%]  (Sampling) 
+Chain 6 finished in 36.2 seconds.
+
+All 10 chains finished successfully.
+Mean chain execution time: 28.6 seconds.
+Total execution time: 40.2 seconds.
+
+Warning: 50 of 500 (10.0%) transitions ended with a divergence.
+This may indicate insufficient exploration of the posterior distribution.
+Possible remedies include:
+  * Increasing adapt_delta closer to 1 (default is 0.8)
+  * Reparameterizing the model (e.g. using a non-centered parameterization)
+  * Using informative or weakly informative prior distributions
+
+Warning message:
+Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+
+6849.98275614093
+ */
+
+/* named seed 1 */
+/* 6765.39734251076 */
+
+/* ref seed 1 */
+/* 7251.31920543013 */

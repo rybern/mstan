@@ -10,11 +10,11 @@ import           Types
 import qualified Parsing
 
 
-
+data DebugParse = Silent | DebugParse deriving (Show, Eq)
 
 data RunOptions =
     Server GraphServerOptions
-  | Exec MStanFile (Maybe FilePath) ExecCommand
+  | Exec MStanFile DebugParse (Maybe FilePath) ExecCommand
   deriving Show
 
 
@@ -41,7 +41,7 @@ parserOptions = hsubparser
             )
     <> command
            "exec"
-           (info (Exec <$> parserMStanFile <*> parserOutputFile <*> parserExecCommand)
+           (info (Exec <$> parserMStanFile <*> parserDebugParse <*> parserOutputFile <*> parserExecCommand)
                  (progDesc "Execute model network command")
            )
     )
@@ -61,6 +61,11 @@ parserMStanFile :: Parser MStanFile
 parserMStanFile = MStanFile <$> strOption
     (long "modular-stan-file" <> short 'f' <> metavar "FILE" <> help
         "File path of the input modular Stan file"
+    )
+
+parserDebugParse :: Parser DebugParse
+parserDebugParse = flag Silent DebugParse
+    (long "debug-parse" <> short 'v' <> help "Show parsed modular program data structure"
     )
 
 parserOutputFile :: Parser (Maybe FilePath)

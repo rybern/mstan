@@ -34,6 +34,11 @@ selectModules program selectionNames = ConcreteProgram
                           . catMaybes
                           . map implTD
                           $ concreteModules
+    , concreteTP        = ((fromMaybe mempty (concretizeCode <$> topTP program)) <>)
+                          . foldl' (<>) mempty
+                          . catMaybes
+                          . map implTP
+                          $ concreteModules
     , concreteGQ        = ((fromMaybe mempty (concretizeCode <$> topGQ program)) <>)
                           . foldl' (<>) mempty
                           . catMaybes

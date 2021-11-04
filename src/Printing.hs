@@ -33,6 +33,7 @@ linesConcreteProgram (ConcreteProgram {..}) = concat $ catMaybes
   , Just . linesBlock "data" $ concreteData
   , (linesBlock "transformed data" <$>) . whenNonempty . linesCode $ concreteTD
   , (linesBlock "parameters" <$>) . whenNonempty . map lineParam . Set.toList $ concreteParams
+  , (linesBlock "transformed parameters" <$>) . whenNonempty . linesCode $ concreteTP
   , Just . linesBlock "model" . linesCode $ concreteBody
   , (linesBlock "generated quantities" <$>) . whenNonempty . linesCode $ concreteGQ
   ]
