@@ -374,7 +374,6 @@ sigImpls p =
               )
         . groupBy (\x y -> implSignature x == implSignature y)
         . sortOn implSignature
-        . Set.toList
         $ implementations p
 
 implSigs :: ModularProgram -> Map ImplID (Set SigName)
@@ -390,7 +389,7 @@ implSigs p = implSigs'
                           impl
                       )
                   )
-            $ (Set.toList $ implementations p)
+            $ implementations p
     implSigs' =
         Map.insert (Nothing, ImplName "root") (codeSigs (topBody p)) implSigs
 
@@ -399,7 +398,7 @@ moduleTreeGraph p = moduleGraphToDot
     (ModuleGraph allImpls allSigs (implSigs p) (sigImpls p))
   where
     allSigs  = Set.map (\(_, SigName sig) -> SigName sig) (signatures p)
-    allImpls = Set.insert (Nothing, ImplName "root") $ Set.map
+    allImpls = (Nothing, ImplName "root") : map
         (\impl -> (Just (implSignature impl), implName impl))
         (implementations p)
 

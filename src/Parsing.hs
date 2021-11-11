@@ -409,8 +409,7 @@ parserModularProgram = do
     let signatures = Set.unions $ map fieldSignatures implementations
     return $ ModularProgram
         { signatures      = Set.map ((Type "",) . fst) signatures
-        , implementations = Set.map (fmap (findModules signatures))
-                                    (Set.fromList implementations)
+        , implementations = map (fmap (findModules signatures)) implementations
         , topBody         = findModules signatures modelCode
         , topFunctions    = findModules signatures <$> topFunctions
         , topTD           = findModules signatures <$> tdCode

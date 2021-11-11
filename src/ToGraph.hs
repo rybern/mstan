@@ -34,7 +34,7 @@ publishGraph fp g = do
         svgFP = fp <> ".svg"
 
 
-data ModuleGraph = ModuleGraph (Set ImplID) (Set SigName) (Map ImplID (Set SigName)) (Map SigName (Set ImplName)) deriving (Eq, Ord, Show)
+data ModuleGraph = ModuleGraph [ImplID] (Set SigName) (Map ImplID (Set SigName)) (Map SigName (Set ImplName)) deriving (Eq, Ord, Show)
 
 data ModelNode = ModelNode Text deriving (Eq, Ord, Show)
 data DeltaModule = DeltaModule Text Text Text deriving (Eq, Ord, Show)
@@ -83,7 +83,7 @@ moduleGraphToDot (ModuleGraph impls sigs toSigs toImpls) = DotGraph
     , strictGraph     = True
     , graphID         = Nothing
     , graphStatements = mconcat
-        [ Seq.fromList . Set.toList . Set.map implNodeNode $ impls
+        [ Seq.fromList . map implNodeNode $ impls
         , Seq.fromList . Set.toList . Set.map sigNodeNode $ sigs
         , Seq.fromList . fmap implSigEdge . adjToList . implIDs $ toImpls
         , Seq.fromList . fmap sigImplEdge . adjToList $ toSigs

@@ -67,7 +67,7 @@ type ImplID = (Maybe SigName, ImplName)
 -- for all `implementations`, the body follows the matching signature in `signatures`
 data ModularProgram = ModularProgram
   { signatures :: Set (Type, SigName), -- Constraints: Unique SigName
-    implementations :: Set (ModuleImplementation ModularCode),
+    implementations :: [ModuleImplementation ModularCode], -- List to order the module tree
     topFunctions :: Maybe ModularCode,
     topData :: [Text],
     topTD :: Maybe ModularCode,
