@@ -94,20 +94,26 @@ module "glm" Regression(yn | xn) {
   }
   parameters {
     real<lower=0> sigma;
-    real intercept;
+    real intercept_offset;
+  }
+  transformed parameters {
+    vector[N] intercept = DayOfWeekTrend() + DayOfYearTrend();
+    HolidayTrend.UpdateIntercept(intercept);
+    intercept += intercept_offset;
   }
   generated quantities {
     vector[N] log_lik;
-    vector[N] f = ymean +
-      LongTermTrend.OriginalScaleFunction() +
-      SeasonalTrend.OriginalScaleFunction() +
-      DayOfWeekTrend.OriginalScaleFunction();
+    vector[N] f = ymean + ysd * (
+       LongTermTrend.OriginalScaleFunction() +
+       SeasonalTrend.OriginalScaleFunction() +
+       (intercept - intercept_offset)
+      );
     for (n in 1:N) log_lik[n] = normal_lpdf(y[n] | f[n], sigma*ysd);
   }
-  intercept ~ normal(0, 1);
+  intercept_offset ~ normal(0, 1);
   sigma ~ normal(0, 0.5);
   yn ~ normal_id_glm(x_in_basis,
-                     intercept + DayOfWeekTrend.InterceptSummand(),
+                     intercept,
                      append_row(LongTermTrend.Weights(),
                                 SeasonalTrend.Weights()),
                      sigma);
@@ -138,7 +144,7 @@ module "yes" LongTermTrend {
     return diagSPD_f1 .* beta_f1;
   }
   OriginalScaleFunction() {
-    return (intercept + PHI_f1 * (diagSPD_f1 .* beta_f1)) * ysd;
+    return (intercept_offset + PHI_f1 * (diagSPD_f1 .* beta_f1));
   }
 }
 
@@ -181,7 +187,7 @@ module "yes" SeasonalTrend {
     return diagSPD_f2 .* beta_f2;
   }
   OriginalScaleFunction() {
-    return (PHI_f2 * (diagSPD_f2 .* beta_f2))*ysd;
+    return (PHI_f2 * (diagSPD_f2 .* beta_f2));
   }
 }
 
@@ -200,26 +206,116 @@ module "no" SeasonalTrend {
   }
 }
 
-module "yes" DayOfWeekTrend {
+module "yes" DayOfWeekTrend() {
   parameters {
     vector[6] beta_f3;
   }
-  InterceptSummand() {
+  model {
     beta_f3 ~ normal(0, 1);
-    vector[7] f_day_of_week = append_row(0, beta_f3);
-    return f_day_of_week[day_of_week];
   }
-  OriginalScaleFunction() {
-    vector[7] f_day_of_week = append_row(0, beta_f3);
-    return f_day_of_week[day_of_week] * ysd;
+  vector[7] f_day_of_week = append_row(0, beta_f3);
+  return DayOfWeekWeights() .* f_day_of_week[day_of_week];
+}
+
+module "no" DayOfWeekTrend() {
+  return rep_vector(0, N);
+}
+
+module "weighted" DayOfWeekWeights() {
+  transformed data {
+    real L_g3 = c_g3 * max(xn);
+    matrix[N,M_g3] PHI_g3 = PHI_EQ(N, M_g3, L_g3, xn);
+  }
+  parameters {
+    real<lower=0> lengthscale_g3;
+    real<lower=0> sigma_g3;
+    vector[M_g3] beta_g3;
+  }
+  transformed parameters {
+    vector[M_g3] diagSPD_g3 = diagSPD_EQ(sigma_g3, lengthscale_g3, L_g3, M_g3);
+    vector[N] exp_g3 = exp(PHI_g3 * (diagSPD_g3 .* beta_g3));
+  }
+  model {
+    sigma_g3 ~ normal(0, 0.1);
+    lengthscale_g3 ~ lognormal(log(7000/xsd), 1);
+    beta_g3 ~ normal(0, 1);
+  }
+  return exp_g3;
+}
+
+module "uniform" DayOfWeekWeights() {
+  return rep_vector(1, N);
+}
+
+module "yes" DayOfYearTrend() {
+  parameters {
+    // In earlier models:
+    // multiplier = sqrt( (slab_scale * sqrt(caux_f4))^2 * square(lambda_f4) ./ ((slab_scale * sqrt(caux_f4))^2 + tau_f4^2*square(lambda_f4)))*tau_f4
+    // Could be done with module application in whole program
+    vector[366] beta_f4;
+  }
+  model {
+    beta_f4 ~ DayOfYearHeirarchicalVariance();
+    beta_f4 ~ DayOfYearNormalVariance();
+  }
+  return beta_f4[day_of_year];
+}
+
+module "yes" DayOfYearHeirarchicalVariance(beta_f4) {
+  transformed data {
+    real nu_global = 1;
+    real nu_local = 1;
+    real slab_scale = 1;
+    real slab_df = 100;
+  }
+  parameters {
+    real<lower=0> tau_f4;
+    real<lower=0> caux_f4;
+    vector<lower=0>[366] lambda_f4;
+  }
+  model {
+    lambda_f4 ~ student_t(nu_local, 0, 1);
+    tau_f4 ~ student_t(nu_global, 0, scale_global*2);
+    caux_f4 ~ inv_gamma(0.5*slab_df, 0.5*slab_df);
+  }
+  real c_f4 = slab_scale * sqrt(caux_f4);
+  beta_f4 ~ normal(0, sqrt( c_f4^2 * square(lambda_f4) ./ (c_f4^2 + tau_f4^2*square(lambda_f4)))*tau_f4);
+}
+
+module "no" DayOfYearHeirarchicalVariance(beta_f4) {
+}
+
+module "yes" DayOfYearNormalVariance(beta_f4) {
+  parameters {
+    real<lower=0> sigma_f4;
+    vector[366] beta_f4;
+  }
+  model {
+    sigma_f4 ~ normal(0, 0.1);
+  }
+  beta_f4 ~ normal(0, sigma_f4);
+}
+
+module "no" DayOfYearNormalVariance(beta_f4) {
+}
+
+module "no" DayOfYearTrend() {
+  return rep_vector(0, N);
+}
+
+module "yes" HolidayTrend {
+  parameters {
+    vector[3] beta_f5;
+  }
+  model {
+    beta_f5 ~ normal(0, 1);
+  }
+  UpdateIntercept(intercept) {
+    intercept[memorial_days] = rep_vector(beta_f5[1], size(memorial_days));
+    intercept[labor_days] = rep_vector(beta_f5[2], size(labor_days));
+    intercept[thanksgiving_days] = rep_vector(beta_f5[3], size(thanksgiving_days));
   }
 }
 
-module "no" DayOfWeekTrend {
-  InterceptSummand() {
-    return rep_vector(0, N);
-  }
-  OriginalScaleFunction() {
-    return rep_vector(0, N);
-  }
+module "no" HolidayTrend {
 }

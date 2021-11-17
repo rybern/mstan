@@ -65,7 +65,7 @@ modularProgramLines (ModularProgram {..}) = concat $ catMaybes
   , (("topData:" :) <$>) . whenNonempty . indent 1 $ topData
   , (("topTD:" :) . indent 1 . linesModularCode) <$> topTD >>= whenNonempty
   , (("topParams:" :) <$>) . whenNonempty . indent 1 . map unParam . Set.toList $ topParams
-  , (("topBody:" :) <$>) . whenNonempty . indent 1 $ linesModularCode $ topBody
+  , (("topBody:" :) <$>) . whenNonempty . indent 1 $ linesModularCode $ topModel
   , (("topGQ:" :) . indent 1 . linesModularCode) <$> topGQ >>= whenNonempty
   ]
 

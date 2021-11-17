@@ -25,8 +25,7 @@ import           Parsing
 -- The selection map is total for all signatures in the program
 selectModules :: ModularProgram -> Map SigName ImplName -> ConcreteProgram
 selectModules program selectionNames = ConcreteProgram
-    { concreteBody      = concretizeCode (topBody program)
-    , concreteParams    = Set.unions
+    { concreteParams    = Set.unions
                           $ topParams program
                           : map implParams concreteModules
     , concreteTD        = ((fromMaybe mempty (concretizeCode <$> topTD program)) <>)
@@ -38,6 +37,11 @@ selectModules program selectionNames = ConcreteProgram
                           . foldl' (<>) mempty
                           . catMaybes
                           . map implTP
+                          $ concreteModules
+    , concreteModel     = ((concretizeCode $ topModel program) <>)
+                          . foldl' (<>) mempty
+                          . catMaybes
+                          . map implModel
                           $ concreteModules
     , concreteGQ        = ((fromMaybe mempty (concretizeCode <$> topGQ program)) <>)
                           . foldl' (<>) mempty
@@ -391,7 +395,7 @@ implSigs p = implSigs'
                   )
             $ implementations p
     implSigs' =
-        Map.insert (Nothing, ImplName "root") (codeSigs (topBody p)) implSigs
+        Map.insert (Nothing, ImplName "root") (codeSigs (topModel p)) implSigs
 
 moduleTreeGraph :: ModularProgram -> Graph
 moduleTreeGraph p = moduleGraphToDot

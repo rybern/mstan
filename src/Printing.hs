@@ -34,6 +34,6 @@ linesConcreteProgram (ConcreteProgram {..}) = concat $ catMaybes
   , (linesBlock "transformed data" <$>) . whenNonempty . linesCode $ concreteTD
   , (linesBlock "parameters" <$>) . whenNonempty . map lineParam . Set.toList $ concreteParams
   , (linesBlock "transformed parameters" <$>) . whenNonempty . linesCode $ concreteTP
-  , Just . linesBlock "model" . linesCode $ concreteBody
+  , Just . linesBlock "model" . linesCode $ concreteModel
   , (linesBlock "generated quantities" <$>) . whenNonempty . linesCode $ concreteGQ
   ]

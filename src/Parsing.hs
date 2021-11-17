@@ -226,6 +226,12 @@ parserFunctions = do
     (_, functions) <- parserBlock (string "functions") (parserCode 2)
     return functions
 
+parserModel :: Parser Code
+parserModel = do
+    ignore
+    (_, tp) <- parserBlock (string "model") (parserCode 2)
+    return tp
+
 parserTP :: Parser Code
 parserTP = do
     ignore
@@ -266,13 +272,13 @@ parserFields = many1' parserField
 
 parserAssociatedModule :: Parser (ModuleImplementation Code)
 parserAssociatedModule = do
-    ((implName, implSignature, ()), (implFunctions, implParams, implTD, implTP, implGQ, implFields)) <-
+    ((implName, implSignature, ()), (implFunctions, implParams, implTD, implTP, implModel, implGQ, implFields)) <-
         parserBlock (moduleHead (return ())) (moduleBody parserFields)
     return $ ModuleImplementation { .. }
 
 parserSingletonModule :: Parser (ModuleImplementation Code)
 parserSingletonModule = do
-    ((implName, implSignature, implArgs), (implFunctions, implParams, implTD, implTP, implGQ, implBody)) <-
+    ((implName, implSignature, implArgs), (implFunctions, implParams, implTD, implTP, implModel, implGQ, implBody)) <-
         parserBlock (moduleHead moduleArgs) (moduleBody (parserCode 1))
     let implFields =
             [ ModuleField { fieldBody      = implBody
@@ -304,7 +310,7 @@ moduleHead parseArgs = do
 
 moduleBody
     :: Parser body
-    -> Parser (Maybe Code, Set Param, Maybe Code, Maybe Code, Maybe Code, body)
+    -> Parser (Maybe Code, Set Param, Maybe Code, Maybe Code, Maybe Code, Maybe Code, body)
 moduleBody parseBody = do
     implFunctions <- option Nothing (Just <$> parserFunctions)
     ignore
@@ -314,10 +320,12 @@ moduleBody parseBody = do
     ignore
     implTP <- option Nothing (Just <$> parserTP)
     ignore
+    implModel <- option Nothing (Just <$> parserModel)
+    ignore
     implGQ <- option Nothing (Just <$> parserGQ)
     ignore
     implBody <- parseBody
-    return (implFunctions, implParams, implTD, implTP, implGQ, implBody)
+    return (implFunctions, implParams, implTD, implTP, implModel, implGQ, implBody)
 
 findModules :: Set (SigName, Maybe FieldName) -> Code -> ModularCode
 findModules signatures code = ModularCode
@@ -410,10 +418,10 @@ parserModularProgram = do
     return $ ModularProgram
         { signatures      = Set.map ((Type "",) . fst) signatures
         , implementations = map (fmap (findModules signatures)) implementations
-        , topBody         = findModules signatures modelCode
         , topFunctions    = findModules signatures <$> topFunctions
         , topTD           = findModules signatures <$> tdCode
         , topTP           = findModules signatures <$> tpCode
+        , topModel        = findModules signatures modelCode
         , topGQ           = findModules signatures <$> gqCode
         , topData         = dataVars
         , topParams       = topParams
