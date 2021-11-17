@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
 module ModularStan where
@@ -20,40 +21,15 @@ import           Parsing
 
 
 
-
 -- Constraint:
 -- The selection map is total for all signatures in the program
-selectModules :: ModularProgram -> Map SigName ImplName -> ConcreteProgram
-selectModules program selectionNames = ConcreteProgram
-    { concreteParams    = Set.unions
-                          $ topParams program
-                          : map implParams concreteModules
-    , concreteTD        = ((fromMaybe mempty (concretizeCode <$> topTD program)) <>)
-                          . foldl' (<>) mempty
-                          . catMaybes
-                          . map implTD
-                          $ concreteModules
-    , concreteTP        = ((fromMaybe mempty (concretizeCode <$> topTP program)) <>)
-                          . foldl' (<>) mempty
-                          . catMaybes
-                          . map implTP
-                          $ concreteModules
-    , concreteModel     = ((concretizeCode $ topModel program) <>)
-                          . foldl' (<>) mempty
-                          . catMaybes
-                          . map implModel
-                          $ concreteModules
-    , concreteGQ        = ((fromMaybe mempty (concretizeCode <$> topGQ program)) <>)
-                          . foldl' (<>) mempty
-                          . catMaybes
-                          . map implGQ
-                          $ concreteModules
-    , concreteFunctions = ((fromMaybe mempty (concretizeCode <$> topFunctions program)) <>)
-                          . foldl' (<>) mempty
-                          . catMaybes
-                          . map implFunctions
-                          $ concreteModules
-    , concreteData      = topData program
+selectModules :: ModularProgram -> Map SigName ImplName -> Program ConcreteCode
+selectModules
+  (ModularProgram {..}) selectionNames =
+  Program
+    { progBlocks    =
+        mconcat $ fmap concretizeCode (progBlocks topProgram) : map implBlocks concreteModules
+    , progData      = progData topProgram
     }
   where
     -- User's mapping from module signatures (the bases, sometimes on the LHS of the '.') to modules
@@ -68,7 +44,7 @@ selectModules program selectionNames = ConcreteProgram
                                 && implSignature impl
                                 == sigName'
                         )
-                        (implementations program)
+                        implementations
                     )
             in  case found of
                     Nothing ->
@@ -303,14 +279,14 @@ type ModuleImplementation' = ModuleImplementation
 type ModularProgram' = ModularProgram
 
 -- Concrete program/model
-type ConcreteProgram' = ConcreteProgram
+type ConcreteProgram' = Program ConcreteCode
 
 -- Parameter set
 type ParameterSet = Set Param
 
 -- Module application
 type ModuleApplication
-    = ModularProgram -> Map SigName ImplName -> ConcreteProgram
+    = ModularProgram -> Map SigName ImplName -> Program ConcreteCode
 
 -- Module selection
 type ModuleSelection = (SigName, ImplName)
@@ -384,18 +360,19 @@ implSigs :: ModularProgram -> Map ImplID (Set SigName)
 implSigs p = implSigs'
   where
     codeSigs = Set.map (\(SigName sig, _, _) -> SigName sig) . moduleInstances
+    moduleSigs :: Foldable t => t (ModularCode) -> Set SigName
+    moduleSigs = Set.unions . concatMap (\code -> [codeSigs code])
     implSigs =
         Map.fromList
             . map
                   (\impl ->
                       ( (Just (implSignature impl), implName impl)
-                      , Set.unions $ map (codeSigs . fieldBody) $ implFields
-                          impl
+                      , moduleSigs impl
                       )
                   )
             $ implementations p
     implSigs' =
-        Map.insert (Nothing, ImplName "root") (codeSigs (topModel p)) implSigs
+        Map.insert (Nothing, ImplName "root") (moduleSigs (topProgram p)) implSigs
 
 moduleTreeGraph :: ModularProgram -> Graph
 moduleTreeGraph p = moduleGraphToDot

@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DerivingVia #-}
@@ -68,41 +70,34 @@ type ImplID = (Maybe SigName, ImplName)
 data ModularProgram = ModularProgram
   { signatures :: Set (Type, SigName), -- Constraints: Unique SigName
     implementations :: [ModuleImplementation ModularCode], -- List to order the module tree
-    topFunctions :: Maybe ModularCode,
-    topData :: [Text],
-    topTD :: Maybe ModularCode,
-    topParams :: Set Param,
-    topTP :: Maybe ModularCode,
-    topModel :: ModularCode,
-    topGQ :: Maybe ModularCode
+    topProgram :: Program ModularCode
   } deriving (Show)
+
+data Program code = Program
+  { progData :: [Text],
+    progBlocks :: Blocks code
+  } deriving (Show, Functor, Foldable)
+
+data Blocks code = Blocks
+  { functions :: Maybe code,
+    td :: Maybe code,
+    params :: Set Param,
+    tp :: Maybe code,
+    model :: Maybe code,
+    gq :: Maybe code
+  } deriving (Eq, Ord, Show, Functor, Foldable, Applicative, Semigroup, Monoid)
 
 data ModuleField code = ModuleField
   { fieldBody :: code
   , fieldArgs :: [Symbol]
   , fieldSignature :: Maybe FieldName
   }
-  deriving (Eq, Ord, Show, Functor)
+  deriving (Eq, Ord, Show, Functor, Foldable)
 
 data ModuleImplementation code = ModuleImplementation
   { implName :: ImplName,
     implFields :: [ModuleField code],
     implSignature :: SigName,
-    implFunctions :: Maybe code,
-    implParams :: Set Param,
-    implTD :: Maybe code,
-    implTP :: Maybe code,
-    implModel :: Maybe code,
-    implGQ :: Maybe code
+    implBlocks :: Blocks code
   }
-  deriving (Eq, Ord, Show, Functor)
-
-data ConcreteProgram = ConcreteProgram
-  { concreteFunctions :: ConcreteCode,
-    concreteData :: [Text],
-    concreteParams :: Set Param,
-    concreteTD :: ConcreteCode,
-    concreteTP :: ConcreteCode,
-    concreteModel :: ConcreteCode,
-    concreteGQ :: ConcreteCode
-  } deriving Show
+  deriving (Eq, Ord, Show, Functor, Foldable)

@@ -28,11 +28,12 @@ implementationLines (ModuleImplementation {..}) = concat $ catMaybes
   , Just ["implFields:"]
   , Just . concat . map (starIndent 2 . fieldLines) $ implFields
   , (("sigName:" :) <$>) . whenNonempty . indent 1 $ [unSigName implSignature]
-  , (("implFunctions:" :) . indent 1 . linesModularCode) <$> implFunctions >>= whenNonempty
-  , (("implTD:" :) . indent 1 . linesModularCode) <$> implTD >>= whenNonempty
-  , (("implGQ:" :) . indent 1 . linesModularCode) <$> implGQ >>= whenNonempty
-  , (("implParams:" :) <$>) . whenNonempty . indent 1 . map unParam . Set.toList $ implParams
+  , (("implFunctions:" :) . indent 1 . linesModularCode) <$> functions >>= whenNonempty
+  , (("implTD:" :) . indent 1 . linesModularCode) <$> td >>= whenNonempty
+  , (("implGQ:" :) . indent 1 . linesModularCode) <$> gq >>= whenNonempty
+  , (("implParams:" :) <$>) . whenNonempty . indent 1 . map unParam . Set.toList $ params
   ]
+  where (Blocks {..}) = implBlocks
 
 printModularProgram :: ModularProgram -> IO ()
 printModularProgram = mapM_ Text.putStrLn . modularProgramLines
@@ -61,13 +62,14 @@ modularProgramLines (ModularProgram {..}) = concat $ catMaybes
   , Just . indent 1 . map (unSigName . snd) . Set.toList $ signatures
   , Just ["implementations:"]
   , Just . concat . map (starIndent 2 . implementationLines) $ implementations
-  , (("topFunctions:" :) . indent 1 . linesModularCode) <$> topFunctions >>= whenNonempty
-  , (("topData:" :) <$>) . whenNonempty . indent 1 $ topData
-  , (("topTD:" :) . indent 1 . linesModularCode) <$> topTD >>= whenNonempty
-  , (("topParams:" :) <$>) . whenNonempty . indent 1 . map unParam . Set.toList $ topParams
-  , (("topBody:" :) <$>) . whenNonempty . indent 1 $ linesModularCode $ topModel
-  , (("topGQ:" :) . indent 1 . linesModularCode) <$> topGQ >>= whenNonempty
+  , (("topFunctions:" :) . indent 1 . linesModularCode) <$> functions >>= whenNonempty
+  , (("topData:" :) <$>) . whenNonempty . indent 1 $ progData topProgram
+  , (("topTD:" :) . indent 1 . linesModularCode) <$> td >>= whenNonempty
+  , (("topParams:" :) <$>) . whenNonempty . indent 1 . map unParam . Set.toList $ params
+  , (("topBody:" :) <$>) . whenNonempty =<< indent 1 . linesModularCode <$> model
+  , (("topGQ:" :) . indent 1 . linesModularCode) <$> gq >>= whenNonempty
   ]
+  where (Blocks {..}) = progBlocks topProgram
 
 
 -- linesConcreteProgram :: ConcreteProgram -> [Text]

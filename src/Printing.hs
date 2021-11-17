@@ -10,7 +10,7 @@ import qualified Data.Set                      as Set
 import Types
 import Indent
 
-printConcreteProgram :: ConcreteProgram -> IO ()
+printConcreteProgram :: Program ConcreteCode -> IO ()
 printConcreteProgram = mapM_ Text.putStrLn . linesConcreteProgram
 
 linesCode :: ConcreteCode -> [Text]
@@ -27,13 +27,14 @@ linesBlock name lines = concat [
 lineParam :: Param -> Text
 lineParam (Param p) = p <> ";"
 
-linesConcreteProgram :: ConcreteProgram -> [Text]
-linesConcreteProgram (ConcreteProgram {..}) = concat $ catMaybes
-  [ (linesBlock "functions" <$>) . whenNonempty . linesCode $ concreteFunctions
-  , Just . linesBlock "data" $ concreteData
-  , (linesBlock "transformed data" <$>) . whenNonempty . linesCode $ concreteTD
-  , (linesBlock "parameters" <$>) . whenNonempty . map lineParam . Set.toList $ concreteParams
-  , (linesBlock "transformed parameters" <$>) . whenNonempty . linesCode $ concreteTP
-  , Just . linesBlock "model" . linesCode $ concreteModel
-  , (linesBlock "generated quantities" <$>) . whenNonempty . linesCode $ concreteGQ
+linesConcreteProgram :: Program ConcreteCode -> [Text]
+linesConcreteProgram (Program {..}) = concat $ catMaybes
+  [ (linesBlock "functions" <$>) . whenNonempty =<< linesCode <$> functions
+  , Just . linesBlock "data" $ progData
+  , (linesBlock "transformed data" <$>) . whenNonempty =<< linesCode <$> td
+  , (linesBlock "parameters" <$>) . whenNonempty . map lineParam . Set.toList $ params
+  , (linesBlock "transformed parameters" <$>) . whenNonempty =<< linesCode <$> tp
+  , Just . linesBlock "model" =<< linesCode <$> model
+  , (linesBlock "generated quantities" <$>) . whenNonempty =<< linesCode <$> gq
   ]
+  where (Blocks {..}) = progBlocks

@@ -272,13 +272,14 @@ parserFields = many1' parserField
 
 parserAssociatedModule :: Parser (ModuleImplementation Code)
 parserAssociatedModule = do
-    ((implName, implSignature, ()), (implFunctions, implParams, implTD, implTP, implModel, implGQ, implFields)) <-
+    ((implName, implSignature, ()), (functions, params, td, tp, model, gq, implFields)) <-
         parserBlock (moduleHead (return ())) (moduleBody parserFields)
+    let implBlocks = Blocks { ..}
     return $ ModuleImplementation { .. }
 
 parserSingletonModule :: Parser (ModuleImplementation Code)
 parserSingletonModule = do
-    ((implName, implSignature, implArgs), (implFunctions, implParams, implTD, implTP, implModel, implGQ, implBody)) <-
+    ((implName, implSignature, implArgs), (functions, params, td, tp, model, gq, implBody)) <-
         parserBlock (moduleHead moduleArgs) (moduleBody (parserCode 1))
     let implFields =
             [ ModuleField { fieldBody      = implBody
@@ -286,6 +287,7 @@ parserSingletonModule = do
                           , fieldArgs      = implArgs
                           }
             ]
+    let implBlocks = Blocks { ..}
     return $ ModuleImplementation { .. }
 
 moduleArgs :: Parser [Text]
@@ -418,13 +420,17 @@ parserModularProgram = do
     return $ ModularProgram
         { signatures      = Set.map ((Type "",) . fst) signatures
         , implementations = map (fmap (findModules signatures)) implementations
-        , topFunctions    = findModules signatures <$> topFunctions
-        , topTD           = findModules signatures <$> tdCode
-        , topTP           = findModules signatures <$> tpCode
-        , topModel        = findModules signatures modelCode
-        , topGQ           = findModules signatures <$> gqCode
-        , topData         = dataVars
-        , topParams       = topParams
+        , topProgram      = Program {
+              progData         = dataVars
+            , progBlocks       = Blocks {
+                  functions    = findModules signatures <$> topFunctions
+                , td           = findModules signatures <$> tdCode
+                , tp           = findModules signatures <$> tpCode
+                , model        = Just $ findModules signatures modelCode
+                , gq           = findModules signatures <$> gqCode
+                , params       = topParams
+                }
+            }
         }
 
 readModularProgram :: MStanFile -> IO ModularProgram
