@@ -27,7 +27,7 @@ print(cmdstan_version())
 #' Model and fit
 model <- cmdstan_model(stan_file = stanfile, quiet=TRUE)
 
-fit <- model$sample(data = standata, iter_warmup=50, iter_sampling=50,
+fit <- model$sample(data = standata, iter_warmup=200, iter_sampling=200,
                           chains=10, parallel_chains=10, seed=1)
 loo <- fit$loo()
 

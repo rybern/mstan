@@ -65,23 +65,24 @@ class ModelGraph:
         """Get an arbitrary model ID from the model graph"""
         return self.execCommand(["get-first-model"])
 
-def modelGraphTest(modelGraph, modelEvaluator):
+def modelGraphTest(modelGraph, modelEvaluator, firstModel = None):
     """Print out some example usage of the model graph"""
     print("Model graph example:")
 
-    first = modelGraph.getFirstModel()
-    print("\tFIRST MODEL ID:\n\t\t", first)
+    if not firstModel:
+        firstModel = modelGraph.getFirstModel()
+    print("\tFIRST MODEL ID:\n\t\t", firstModel)
 
-    concrete = modelGraph.getConcreteModel(first)
+    concrete = modelGraph.getConcreteModel(firstModel)
     print("\tCONCRETE FILEPATH:\n\t\t", concrete)
 
-    neighbors = modelGraph.getModelNeighbors(first)
+    neighbors = modelGraph.getModelNeighbors(firstModel)
     print("\tNEIGHBORS:\n\t\t", "\n\t\t ".join(neighbors))
 
     score = modelEvaluator.score(concrete)
     print("\tSCORE:\n\t\t", score)
 
-def modelSearch(modelGraph, modelEvaluator, exhaustive=False):
+def modelSearch(modelGraph, modelEvaluator, firstModel = None, exhaustive=False):
     """Return a model ID from the given model graph that scores well on the given model evaluator"""
 
     numExpands = 0
@@ -103,7 +104,8 @@ def modelSearch(modelGraph, modelEvaluator, exhaustive=False):
 
     horizon = PriorityQueue()
 
-    firstModel = modelGraph.getFirstModel()
+    if not firstModel:
+        firstModel = modelGraph.getFirstModel()
     firstModelScore = score(firstModel)
     horizon.put((-firstModelScore, [firstModel]))
 
@@ -156,8 +158,12 @@ if __name__ == "__main__":
     modularStanProgram = sys.argv[1] if len(sys.argv) > 1 else defaultProgram
     testData = sys.argv[2] if len(sys.argv) > 2 else defaultData
     notes_output_file = sys.argv[3] if len(sys.argv) > 3 else None
+    startModel = sys.argv[4] if len(sys.argv) > 4 else None
 
-    path, scores = modelSearch(ModelGraph(modularStanProgram), ModelEvaluator(testData)) #, exhaustive = True)
+    if startModel:
+        path, scores = modelSearch(ModelGraph(modularStanProgram), ModelEvaluator(testData), startModel) #, exhaustive = True)
+    else:
+        path, scores = modelSearch(ModelGraph(modularStanProgram), ModelEvaluator(testData)) #, exhaustive = True)
 
     if notes_output_file:
         notes_dict = {}

@@ -1,0 +1,289 @@
+[nix-shell:~/projects/mstan]$ python graph_search.py examples/birthday/birthday-named-trends.m.stan examples/birthday/births_usa_1969.json birthday-search-notes.json DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+Visiting:
+	Model ID:	 DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	Score:		 5232.03666014879
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan get-neighbors -s DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no 4578.51289189479
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:yes 5585.64740270424
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 6717.52522911519
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no 5258.05203071039
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no 6910.5556817289
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no 2534.39086228269
+Visiting:
+	Model ID:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	Score:		 6910.5556817289
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan get-neighbors -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no 5232.03666014879
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no 6540.0331697245
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no 7457.22113390541
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no 7812.98564099377
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no 6935.09267175349
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:yes 7522.39008685674
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 10947.293571471
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no 6818.07560872251
+Visiting:
+	Model ID:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	Score:		 10947.293571471
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan get-neighbors -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 13949.4705863006
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 13956.1115191618
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 13979.3450283511
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+		 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 13959.216111487
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 13127.0934371028
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 11204.7206314456
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 9539.07129169604
+Visiting:
+	Model ID:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	Score:		 13979.3450283511
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan get-neighbors -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 7179.98800734748
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 14076.0642960679
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 14526.2175287678
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 14620.9758161838
+Visiting:
+	Model ID:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	Score:		 14620.9758161838
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan get-neighbors -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 14599.0830512354
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no 4232.97884658324
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 8271.31933308563
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 15299.2223982041
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 14598.5390307264
+Visiting:
+	Model ID:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	Score:		 15299.2223982041
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan get-neighbors -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 7228.88959689867
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 14755.4723371283
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no 3283.42529788937
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 15071.1866654327
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 15313.6835540587
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 11466.8348877919
+Visiting:
+	Model ID:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	Score:		 15313.6835540587
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan get-neighbors -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 5882.44497550228
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 12213.7550467049
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no 14929.7491063869
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:no 1606.94935700181
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 15384.8649465535
+Visiting:
+	Model ID:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	Score:		 15384.8649465535
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan get-neighbors -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 5888.01165872237
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 14608.0099906763
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 15301.5499923433
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 11698.0668475591
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:no,Regression:glm,SeasonalTrend:yes 2161.0542821551
+Running: ./mstan exec -f examples/birthday/birthday-named-trends.m.stan -o temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan get-model -s DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	 ..returned.
+Running: Rscript elpd/elpd.R temp-models/birthday-named-trends_DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes.stan examples/birthday/births_usa_1969.json
+	 ..returned.
+	Push neighbor:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes 14109.1521247001
+Visiting:
+	Model ID:	 DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes
+	Score:		 15301.5499923433
+
+Winner:
+	Model Path:	 ['DayOfWeekTrend:no,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no', 'DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no', 'DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no', 'DayOfWeekTrend:yes,DayOfWeekWeights:uniform,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no', 'DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:no,LongTermTrend:yes,Regression:glm,SeasonalTrend:no', 'DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no', 'DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:no', 'DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes']
+	Score:		 15384.8649465535
+48 scores
+8 expands

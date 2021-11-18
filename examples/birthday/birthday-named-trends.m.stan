@@ -1,10 +1,3 @@
-// Probably should do binary implementations and unique signatures
-// #3 needs to be an addition to intercept
-// https://avehtari.github.io/casestudies/Birthdays/birthdays.html
-// Need to go back and do generated quantities
-// Need module fields
-
-/* model 2 functions */
 functions {
   vector diagSPD_EQ(real alpha, real rho, real L, int M) {
     return sqrt((alpha^2) * sqrt(2*pi()) * rho * exp(-0.5*(rho*pi()/2/L)^2 * linspaced_vector(M, 1, M)^2));
@@ -17,7 +10,6 @@ functions {
     return append_row(q,q);
   }
   matrix PHI_EQ(int N, int M, real L, vector x) {
-    //  return sin(diag_post_multiply(rep_matrix(pi()/(2*L) * (x+L), M), linspaced_vector(M, 1, M)))/sqrt(L);
     matrix[N,M] PHI = sin(diag_post_multiply(rep_matrix(pi()/(2*L) * (x+L), M), linspaced_vector(M, 1, M)))/sqrt(L);
     for (m in 1:M)
       PHI[,m] = PHI[,m] - mean(PHI[,m]);
@@ -31,27 +23,6 @@ functions {
     return PHI;
   }
 }
-
-/* model 1 functions */
-/* functions { */
-/*   vector diagSPD_EQ(real alpha, real rho, real L, int M) { */
-/*     return sqrt((alpha^2) * sqrt(2*pi()) * rho * exp(-0.5*(rho*pi()/2/L)^2 * linspaced_vector(M, 1, M)^2)); */
-/*   } */
-/*   vector diagSPD_periodic(real alpha, real rho, int M) { */
-/*     real a = 1/rho^2; */
-/*     int one_to_M[M]; */
-/*     for (m in 1:M) one_to_M[m] = m; */
-/*     vector[M] q = sqrt(alpha^2 * 2 / exp(a) * to_vector(modified_bessel_first_kind(one_to_M, a))); */
-/*     return append_row(q,q); */
-/*   } */
-/*   matrix PHI_EQ(int N, int M, real L, vector x) { */
-/*     return sin(diag_post_multiply(rep_matrix(pi()/(2*L) * (x+L), M), linspaced_vector(M, 1, M)))/sqrt(L); */
-/*   } */
-/*   matrix PHI_periodic(int N, int M, real w0, vector x) { */
-/*     matrix[N,M] mw0x = diag_post_multiply(rep_matrix(w0*x, M), linspaced_vector(M, 1, M)); */
-/*     return append_col(cos(mw0x), sin(mw0x)); */
-/*   } */
-/* } */
 
 data {
   int<lower=1> N;      // number of observations
@@ -288,7 +259,6 @@ module "no" DayOfYearHeirarchicalVariance(beta_f4) {
 module "yes" DayOfYearNormalVariance(beta_f4) {
   parameters {
     real<lower=0> sigma_f4;
-    vector[366] beta_f4;
   }
   model {
     sigma_f4 ~ normal(0, 0.1);
@@ -318,4 +288,6 @@ module "yes" HolidayTrend {
 }
 
 module "no" HolidayTrend {
+  UpdateIntercept(intercept) {
+  }
 }
