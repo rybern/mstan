@@ -10,6 +10,7 @@ module Types where
 import           Data.Map                       ( Map )
 import qualified Data.Map                      as Map
 import           Data.Set                       ( Set )
+import           qualified Data.Set as                        Set 
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 
@@ -85,7 +86,27 @@ data Blocks code = Blocks
     tp :: Maybe code,
     model :: Maybe code,
     gq :: Maybe code
-  } deriving (Eq, Ord, Show, Functor, Foldable, Applicative, Semigroup, Monoid)
+  } deriving (Eq, Ord, Show, Functor, Foldable)
+
+instance Semigroup code => Semigroup (Blocks code) where
+  blocks1 <> blocks2 = Blocks {
+      functions = functions blocks1 <> functions blocks2
+    , td = td blocks1 <> td blocks2
+    , params = params blocks1 <> params blocks2
+    , tp = tp blocks1 <> tp blocks2
+    , model = model blocks1 <> model blocks2
+    , gq = gq blocks1 <> gq blocks2
+    }
+
+instance Semigroup code => Monoid (Blocks code) where
+  mempty = Blocks {
+      functions = Nothing
+    , td = Nothing
+    , params = Set.empty
+    , tp = Nothing
+    , model = Nothing
+    , gq = Nothing
+    }
 
 data ModuleField code = ModuleField
   { fieldBody :: code
