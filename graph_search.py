@@ -29,7 +29,7 @@ class ModelEvaluator:
 
     def score(self, modelPath):
         """Return the numerical score for the Stan program at the given filepath"""
-        stdout_result = text_command(["Rscript", "elpd/elpd.R", modelPath, self.dataFile])
+        stdout_result = text_command(["Rscript", "elpd.R", modelPath, self.dataFile])
         return float(stdout_result.split('\n')[-1].strip())
 
         # return float(text_command(["bash", "./score.sh", modelPath]))
@@ -48,7 +48,7 @@ class ModelGraph:
 
     def execCommand(self, args):
         """Execute a command on this graph, given arguments to the `mstan` API"""
-        return text_command(["./mstan", "exec", "-f", self.modularStanFile] + args)
+        return text_command(["mstan", "exec", "-f", self.modularStanFile] + args)
 
     def getConcreteModel(self, modelID):
         """Build a concrete Stan program from a model ID and return its filepath."""
