@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TupleSections     #-}
-module Concretization where
+module ConcreteProgram where
 
 import qualified Data.Graph               as Graph
 import           Data.List

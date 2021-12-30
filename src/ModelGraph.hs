@@ -6,7 +6,7 @@ module ModelGraph (
   , allSelections
   , arbitrarySelection
   , modelNeighbors
-  , modelGraph
+  , decoratedModelGraph
   , treeModelGraph
   , modelGraphviz
   ) where

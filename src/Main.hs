@@ -11,7 +11,7 @@ import Parsing
 import Printing
 import ModuleTree
 import ModelGraph
-import Concretization
+import ConcreteProgram
 import Graphviz
 import Types
 import CLI

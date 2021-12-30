@@ -19,7 +19,9 @@ import           Data.List
 import           Types
 import           Printing
 import           Parsing
-import           ModularStan
+import           ModelGraph
+import           ModuleTree
+import           ConcreteProgram
 import           Graphviz
 import           WebSocketServer
 
@@ -69,7 +71,7 @@ runCommand :: FilePath -> Command -> IO Text
 runCommand _ (SelectCmd selections prog) =
     return . Text.intercalate "\n" . linesConcreteProgram $ selectModules prog selections
 runCommand fileDir (ModelGraphCmd prog) = do
-    let graph = modelGraph prog
+    let graph = decoratedModelGraph prog
 
     fileName <-
         (\id -> "graphs/temp_model_graph_" <> id <> ".json") <$> generateID
