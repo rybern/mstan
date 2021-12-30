@@ -22,8 +22,6 @@ import           Parsing
 import           ModularStan
 import           ToGraph
 
--- No longer using TCP server; switched to WebSockets
--- import WebServer
 import           WebSocketServer
 
 data GraphServerOptions = GraphServerOptions {

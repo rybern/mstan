@@ -20,7 +20,6 @@ import           Data.GraphViz.Commands.IO hiding (runCommand)
 import           System.Process
 import           Types
 
--- writeDotFile' = writeDotFile
 printGraph :: DotGraph Text -> Text
 printGraph = Text.pack . LazyText.unpack . printDotGraph
 
@@ -40,8 +39,6 @@ data ModelNode = ModelNode Text deriving (Eq, Ord, Show)
 data DeltaModule = DeltaModule Text Text Text deriving (Eq, Ord, Show)
 
 data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, DeltaModule)] deriving (Eq, Ord, Show)
-
-
 
 implID :: ImplID -> Text
 implID (Just (SigName s), ImplName i) = s <> ":" <> i
