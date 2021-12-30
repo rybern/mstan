@@ -20,8 +20,7 @@ import           Types
 import           Printing
 import           Parsing
 import           ModularStan
-import           ToGraph
-
+import           Graphviz
 import           WebSocketServer
 
 data GraphServerOptions = GraphServerOptions {
@@ -92,7 +91,7 @@ runCommand fileDir (ModuleGraphCmd prog) = do
     putStrLn $ "making file " <> filePath
     return . Text.pack $ fileName
 
--- data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, DeltaModule)] deriving (Eq, Ord, Show)
+-- data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, ModuleDelta)] deriving (Eq, Ord, Show)
 modelGraphAlchemy :: ModelGraph -> Text
 modelGraphAlchemy (ModelGraph nodes edges) = toObj
     [ ("edges", toArr (map edgeObj edges))
@@ -104,7 +103,7 @@ modelGraphAlchemy (ModelGraph nodes edges) = toObj
     commaLines = Text.intercalate "_____" . sort . Text.lines
     quote t = "\"" <> t <> "\""
     clean = Text.replace ":" "___"
-    edgeObj (ModelNode n1, ModelNode n2, DeltaModule sig i1 i2) = toObj
+    edgeObj (ModelNode n1, ModelNode n2, ModuleDelta sig i1 i2) = toObj
         [ ("source"  , selToID $ n1)
         , ("target"  , selToID $ n2)
         , ("sig"     , quote $ sig)

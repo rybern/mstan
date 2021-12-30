@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
-module ToGraph where
+module Graphviz where
 
 import           Data.Set                       ( Set )
 import qualified Data.Set                      as Set
@@ -36,9 +36,9 @@ publishGraph fp g = do
 data ModuleGraph = ModuleGraph [ImplID] (Set SigName) (Map ImplID (Set SigName)) (Map SigName (Set ImplName)) deriving (Eq, Ord, Show)
 
 data ModelNode = ModelNode Text deriving (Eq, Ord, Show)
-data DeltaModule = DeltaModule Text Text Text deriving (Eq, Ord, Show)
+data ModuleDelta = ModuleDelta Text Text Text deriving (Eq, Ord, Show)
 
-data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, DeltaModule)] deriving (Eq, Ord, Show)
+data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, ModuleDelta)] deriving (Eq, Ord, Show)
 
 implID :: ImplID -> Text
 implID (Just (SigName s), ImplName i) = s <> ":" <> i
@@ -60,8 +60,8 @@ sigNodeNode s = DN $ DotNode (sigID s) [sigLabel s, Shape BoxShape]
 implNodeNode :: ImplID -> DotStatement Text
 implNodeNode i = DN $ DotNode (implID i) [implLabel (snd i)]
 deltaModuleEdge
-  :: (ModelNode, ModelNode, DeltaModule) -> DotStatement Text
-deltaModuleEdge (ModelNode m1, ModelNode m2, DeltaModule _ _ _) =
+  :: (ModelNode, ModelNode, ModuleDelta) -> DotStatement Text
+deltaModuleEdge (ModelNode m1, ModelNode m2, ModuleDelta _ _ _) =
     DE $ DotEdge m1 m2 []
 sigImplEdge :: (ImplID, SigName) -> DotStatement Text
 sigImplEdge (i, s) = DE $ DotEdge (implID i) (sigID s) []

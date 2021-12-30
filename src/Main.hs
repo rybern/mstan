@@ -6,12 +6,13 @@ import qualified Data.Text                     as Text
 import qualified Data.Text.IO                  as Text
 import qualified Data.Set                      as Set
 import Control.Monad
--- import qualified Data.Map                      as Map
 
 import Parsing
 import Printing
-import ModularStan
-import ToGraph
+import ModuleTree
+import ModelGraph
+import Concretization
+import Graphviz
 import Types
 import CLI
 import GraphServer
@@ -31,7 +32,7 @@ execOptions (Exec file debugParse maybeOutFile command) = do
       printModularProgram program
       let tree = moduleTree program
       print tree
-      let graph = treeModelNetwork tree
+      let graph = treeModelGraph tree
       print graph
     result <- Text.unlines <$> execCommand program command
     case maybeOutFile of
