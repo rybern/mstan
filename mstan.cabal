@@ -22,9 +22,11 @@ executable mstan
                        -Wredundant-constraints
   other-modules:       CLI,
                        GraphServer,
-                       ModularStan,
+                       ModuleTree,
+                       ModelGraph,
+                       ConcreteProgram,
                        Parsing,
-                       ToGraph,
+                       Graphviz,
                        Types,
                        Printing,
                        DiagnosticPrinting,
