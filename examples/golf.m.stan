@@ -1,26 +1,33 @@
+// This example is borrowed from Andrew Gelman's case study: https://mc-stan.org/users/documentation/case-studies/golf.html
 data {
-  int J; // Number of distances
-  int n[J]; // Number of shots at each distance
-  vector[J] x; // Distances
-  int y[J]; // Number of successes at each distance
+  int J;        // Number of distances
+  vector[J] x;  // Distances
+  int n[J];     // Number of shots at each distance
+  int y[J];     // Number of successful shots at each distance
 }
 model {
-  y ~ Successes(n, P(x));
+  y ~ NSuccesses(n, PSuccess(x));
 }
-module "Binomial" Successes(y | n, p) {
+
+module "binomial" NSuccesses(y | n, p) {
   y ~ binomial(n, p);
 }
-module "Logit" P(x) {
+
+module "logistic" PSuccess(x) {
   parameters {
     real a;
     real b;
   }
   return logit(a + b*x);
 }
-module "Angular" P(x) {
-  return PAngle(x);
+
+// A shot is successful if its angle is good.
+module "angle_only" PSuccess(x) {
+  return PAngleSuccess(x);
 }
-module "PAngle" PAngle(x) {
+
+// A shot's angle is good if the center of the ball would roll over the hole.
+module "angle_success" PAngleSuccess(x) {
   parameters {
     real sigma_angle;
   }
@@ -30,26 +37,40 @@ module "PAngle" PAngle(x) {
   vector[J] p_angle = 2*Phi(threshold_angle / sigma_angle) - 1;
   return p_angle;
 }
-module "AngleAndDistance" P (x) {
-  return PAngle(x) + PDistance(x);
+
+// A shot is successful if both its angle and its distance are good.
+module "angle_and_distance" PSuccess(x) {
+  return PAngleSuccess(x) + PDistanceSuccess(x);
 }
-module "PDistance" PDistance(x) {
+
+// A shot's distance is good if it would roll to the hole or a little farther.
+module "distance_success" PDistanceSuccess(x) {
   parameters {
     real sigma_distance;
   }
-  (real overshot, real distance_tolerance) = DistanceModel();
+  real overshot = OvershootModel.Overshot();
+  real distance_tolerance = OvershootModel.DistanceTolerance();
   sigma_distance ~ normal(0, 1);
   vector[J] p_distance = Phi((distance_tolerance - overshot)
                              ./ ((x + overshot)*sigma_distance))
     - Phi((- overshot) ./ ((x + overshot)*sigma_distance));
   return p_distance;
 }
-module "Fixed" DistanceModel() {
-  real overshot = 1;
-  real distance_tolerance 3;
-  return (overshot, distance_tolerance);
+
+// Let's just guess the parameters of our overshooting model for now.
+// The OvershootModel hole uses a feature called 'module fields'. It has two fields: "Overshot" and "DistanceTolerance". They can be called separately but they are chosen together.
+module "fixed" OvershootModel {
+  Overshot() {
+    return 1;
+  }
+  DistanceTolerance() {
+    return 3;
+  }
 }
-module "Proportional" Successes(y | n, p) {
+
+// The binomial error model tries harder to fit distances with more shots.
+// Let's modeling the proportion of successes as normal.
+module "proportional" NSuccesses(y | n, p) {
   parameters {
     real<lower=0> sigma_y;
   }
@@ -58,12 +79,19 @@ module "Proportional" Successes(y | n, p) {
   vector[J] raw_proportions = to_vector(y) ./ to_vector(n);
   raw_proportions ~ normal(p, sqrt(p .* (1-p) ./ to_vector(n) + sigma_y^2));
 }
-module "Parametric" DistanceModel() {
+
+// What if we estimate the overshot parameters?
+module "parametric" OvershootModel {
   parameters {
-    real overshot;
-    real distance_tolerance;
+    real overshot_var;
+    real distance_tolerance_var;
   }
-  overshot ~ normal(1, 5);
-  distance_tolerance ~ normal(3, 5);
-  return (overshot, distance_tolerance);
+  Overshot() {
+    overshot_var ~ normal(1, 5);
+    return overshot_var;
+  }
+  DistanceTolerance() {
+    distance_tolerance_var ~ normal(3, 5);
+    return distance_tolerance_var;
+  }
 }
