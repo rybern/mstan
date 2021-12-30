@@ -48,7 +48,7 @@ class ModelGraph:
 
     def execCommand(self, args):
         """Execute a command on this graph, given arguments to the `mstan` API"""
-        return text_command(["./mstan", "exec", "-f", self.modularStanFile] + args)
+        return text_command(["mstan", "exec", "-f", self.modularStanFile] + args)
 
     def getConcreteModel(self, modelID):
         """Build a concrete Stan program from a model ID and return its filepath."""
