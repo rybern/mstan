@@ -1,5 +1,5 @@
 This repository contains:
- * `mstan`, a compiler that implements "swappable modules" for the Stan language. See https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/ for an introduction, and http://ryanbe.me/modular-stan.html for online interactive visualizations of modular programs. `mstan` is built from the `src` directory with `stack` (instructions below).
+ * `mstan exec`, a compiler that implements "swappable modules" for the Stan language. See https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/ for an introduction, and http://ryanbe.me/modular-stan.html for online interactive visualizations of modular programs. `mstan` is built from the `src` directory with `stack` (instructions below).
  * `mstan server`, the backend Websocket server for the http://ryanbe.me/modular-stan.html website.
  * `model_search.py`, which implements a simple proof-of-concept model search for the network of models. `model_search.py` has its own command-line interface and requires `mstan` to operate.
 
@@ -109,4 +109,4 @@ Winner:
 The search selected the model with ID `Model:model8rhs`. To get the concrete Stan program with this `ID`, run `mstan exec -f examples/birthday/birthday.m.stan get-model -s Model:model8rhs`.
 
 # Troubleshooting
- * To see the command line calls that are being made to `elpd.R` and `mstan`, set `debugIO` in `graph_search.py` to `True`
+ * To see the command line calls that are being made to `elpd.R` and `mstan`, set `DEBUG_IO` in `graph_search.py` to `True`
