@@ -12,6 +12,30 @@ This repository contains:
 # Using the `mstan` command-line interface
 You can explore `mstan` commands with `mstan --help`. You can also use help on partial commands, like `mstan exec --help`.
 
+Here is the output of `mstan exec --help`:
+```
+Usage: mstan exec (-f|--modular-stan-file FILE) [-v|--debug-parse] 
+                  [-o|--output-file FILE] COMMAND
+  Execute model network command
+
+Available options:
+  -f,--modular-stan-file FILE
+                           File path of the input modular Stan file
+  -v,--debug-parse         Show parsed modular program data structure
+  -o,--output-file FILE    Output file path
+  -h,--help                Show this help text
+
+Available commands:
+  get-neighbors            Get model IDs of the neighbors of a model
+  get-model                Get the concrete Stan model given a model ID
+  get-module-graph         Generate a representation of the module graph of the
+                           modular Stan program.
+  get-model-graph          Generate a representation of the model graph of the
+                           modular Stan program.
+  get-first-model          Get an arbitrary model ID
+  get-all-models           Get all model IDs
+```
+
 # Running the "Bernoulli" Example
 
 Basic example with this modular stan program:
