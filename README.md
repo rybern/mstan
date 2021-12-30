@@ -1,9 +1,17 @@
+This repository contains:
+ * `mstan`, a compiler that implements "swappable modules" for the Stan language. See https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/ for an introduction, and http://ryanbe.me/modular-stan.html for online interactive visualizations of modular programs. `mstan` is built from the `src` directory with `stack` (instructions below).
+ * `mstan server`, the backend Websocket server for the http://ryanbe.me/modular-stan.html website.
+ * `model_search.py`, which implements a simple proof-of-concept model search for the network of models. `model_search.py` has its own command-line interface and requires `mstan` to operate.
+
 # Installation
- * You'll have to have [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/) installed and run `stack build` to compile `mstan`. When that finishes it should tell you where the binary was installed (e.g. Installing executable mstan in .stack-work/install/x86_64-linux-nix/.../8.8.4/bin). `mstan` should be a symbolic link to the `mstan` binary in that folder.
- * You can use `nix` to install the R dependencies by running everything inside a `nix-shell` (because it'll default to using `default.nix`).
- * You'll need to have Rscript, cmdstanr, and some other dependencies (see `default.nix` if you're having trouble finding dependencies).
- * You'll need to have `cmdstan` installed and have the `CMDSTAN` environment variable set so that `cmdstanr` can find it.
+ 1. Install [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/)
+ 2. Build the `mstan` compiler. Easiest is to run `stack install`, which builds the program and tries to add the executable to your PATH. Another option is to use `stack build`, which will print the installation location, and then add that location to your PATH or copy the binary to where you need it.
+ 3. To use ELPD evaluation, you'll need R dependencies: Rscript, cmdstanr, and some other dependencies (see `default.nix` if you're having trouble finding dependencies). If you want, you can use `nix` to install the R dependencies by running everything inside a `nix-shell` (it'll default to setting up the appropriate environment using `default.nix`). If you use nix, you should comment out the last line of `default.nix` that sets the `CMDSTAN` variable - sorry about that.
+ 4. You'll also need to have `cmdstan` installed and have the `CMDSTAN` environment variable set so that `cmdstanr` can find it. I don't think `nix` currently properly installs `cmdstan`.
  
+# Using the `mstan` command-line interface
+You can explore `mstan` commands with `mstan --help`. You can also use help on partial commands, like `mstan exec --help`.
+
 # Running the "Bernoulli" Example
 
 Basic example with this modular stan program:
@@ -18,12 +26,14 @@ parameters {
 model {
   theta ~ ThetaPrior();  // uniform prior on interval 0,1
   y ~ bernoulli(theta);
-} generated quantities {
+}
+generated quantities {
   vector[N] log_lik;
   for (i in 1:N) {
     log_lik[i] = bernoulli_lpmf(y[i] | theta);
   }
 }
+
 module "informative" ThetaPrior(theta) {
   // Bias theta towards zero
   theta ~ beta(1, 4);
@@ -33,16 +43,16 @@ module "uninformative" ThetaPrior(theta) {
 }
 ```
 
-From root, run `python graph_search.py examples/bernoulli.m.stan examples/bernoulli_data.json`
+From root, run `python graph_search.py examples/bernoulli.m.stan examples/bernoulli_data.json`.
 The first argument is the modular stan file and the second is input data.
 
 # Running the "Birthday" Example
 
-I stuffed the 9 versions of the birthday model into a modular file: `examples/birthday/birthday.m.stan`. This is just to show that it works; we should do a more reasonable translation later.
+My translation of the birthday case study into a modular Stan program for can be found at: `examples/birthday/birthday.m.stan`.
 
-The data for the birthday problem has been preprocessed. You can replicate this by running `Rscript prepare_birthday_data.R` inside examples/birthday. This converts the original `.csv` file into a `.json` file and adds all of the extra information expected by the Stan models (e.g. holidays).
+The data for the birthday problem has been pre-processed. You can replicate the pre-processing by running `Rscript prepare_birthday_data.R` inside `examples/birthday`. This converts the original `.csv` file into a `.json` file and adds all of the extra information expected by the Stan models (e.g. holidays).
 
-To run the graph search, run `python graph_search.py examples/birthday/birthday.m.stan examples/birthday/births_usa_1969.json`.
+There is also a simpler translation of the birthday problem at `examples/birthday/birthday-trivial-translation.m.stan` To run the graph search on this trivial example, execute `python graph_search.py examples/birthday/birthday-trivial-translation.m.stan examples/birthday/births_usa_1969.json`.
 
 Here are example results:
 ```
@@ -72,7 +82,7 @@ Winner:
 2 expands
 ```
 
-The search selected the model with ID `Model:model8rhs`. To get the concrete Stan program with this `ID`, run `./mstan exec -f examples/birthday/birthday.m.stan get-model -s Model:model8rhs`.
+The search selected the model with ID `Model:model8rhs`. To get the concrete Stan program with this `ID`, run `mstan exec -f examples/birthday/birthday.m.stan get-model -s Model:model8rhs`.
 
 # Troubleshooting
  * To see the command line calls that are being made to `elpd.R` and `mstan`, set `debugIO` in `graph_search.py` to `True`
