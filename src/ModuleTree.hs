@@ -22,6 +22,12 @@ import           Types
 -- Data structure manipulation for graph/tree abstractions
 ------
 
+{-
+It's unclear whether translating the input program's module structure into mappings is a necessary step.
+
+One issue with a vanilla "tree" data structure is that module "trees" are not necessarily trees, as multiple implementations can refer to the same hole.
+-}
+
 -- Mapping from each signatures to all of its implementations
 sigImpls :: ModularProgram -> Map SigName (Set ImplName)
 sigImpls p = Map.fromList
