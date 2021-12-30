@@ -24,7 +24,7 @@ import           Types
 printGraph :: DotGraph Text -> Text
 printGraph = Text.pack . LazyText.unpack . printDotGraph
 
-publishGraph :: FilePath -> Graph -> IO FilePath
+publishGraph :: FilePath -> Graphviz -> IO FilePath
 publishGraph fp g = do
   writeDotFile dotFP g
   pid <- runCommand $ "dot " <> dotFP <> " -T svg -o " <> svgFP
@@ -109,4 +109,4 @@ modelGraphToDot (ModelGraph nodes edges) = DotGraph
                             ]
     }
 
-type Graph = DotGraph Text
+type Graphviz = DotGraph Text

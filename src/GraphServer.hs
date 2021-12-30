@@ -72,19 +72,19 @@ runCommand :: FilePath -> Command -> IO Text
 runCommand _ (SelectCmd selections prog) =
     return . Text.intercalate "\n" . linesConcreteProgram $ selectModules prog selections
 runCommand fileDir (ModelGraphCmd prog) = do
-    let modelGraph = modelTree prog
+    let graph = modelGraph prog
 
     fileName <-
         (\id -> "graphs/temp_model_graph_" <> id <> ".json") <$> generateID
     let filePath = fileDir <> fileName
 
-    Text.writeFile fileName (modelGraphAlchemy modelGraph)
+    Text.writeFile fileName (modelGraphAlchemy graph)
 
     renameFile fileName filePath
     putStrLn $ "making file " <> filePath
     return . Text.pack $ fileName
 runCommand fileDir (ModuleGraphCmd prog) = do
-    let moduleGraph = moduleTreeGraph prog
+    let moduleGraph = moduleTreeGraphviz prog
 
     graphName <- ("graphs/temp_model_graph_" <>) <$> generateID
     fileName  <- publishGraph graphName moduleGraph
@@ -110,7 +110,7 @@ modelGraphAlchemy (ModelGraph nodes edges) = toObj
         [ ("source"  , selToID $ n1)
         , ("target"  , selToID $ n2)
         , ("sig"     , quote $ sig)
-        , ("i_source", quote $ i2)
+        , ("i_source", quote $ i1)
         , ("i_target", quote $ i2)
         ]
     nodeObj (ModelNode n) = toObj

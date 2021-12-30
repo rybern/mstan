@@ -24,6 +24,7 @@ data ExecCommand =
   | GetMinimumSelection
   | GetModelGraph
   | GetModuleGraph
+  | GetAllModels
   deriving Show
 
 parseOptions :: IO RunOptions
@@ -99,6 +100,11 @@ parserExecCommand = hsubparser
            "get-first-model"
            (info (pure GetMinimumSelection)
                  (progDesc "Get an arbitrary model ID")
+           )
+    <> command
+           "get-all-models"
+           (info (pure GetAllModels)
+                 (progDesc "Get all model IDs")
            )
     )
 

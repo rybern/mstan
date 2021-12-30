@@ -42,5 +42,6 @@ executable mstan
                        process,
                        random,
                        text,
-                       websockets
+                       websockets,
+                       algebraic-graphs
  
