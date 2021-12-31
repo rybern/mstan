@@ -1,7 +1,9 @@
 This repository contains:
- * **`mstan`**, a compiler that implements a "swappable module" system for the Stan language. See [this blog post](https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/) for an introduction and check out [the website](http://ryanbe.me/modular-stan.html) for interactive visualizations of modular programs.
+ * **`mstan`**, a compiler that implements a "swappable module" system for [Stan](https://mc-stan.org/). See [this blog post](https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/) for an introduction and check out [the website](http://ryanbe.me/modular-stan.html) for interactive visualizations of modular programs.
  * **`model_search.py`**, a simple proof-of-concept model search for the network of models.
  * **`mstan-server`**, the backend server for [the Modular Stan website](http://ryanbe.me/modular-stan.html).
+ 
+**Please keep in mind that this is a research prototype. You are likely to encounter bugs and unimplemented features.**
 
 # Installation
  1. Install [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
@@ -46,14 +48,16 @@ Available commands:
   list-all-models          Return all model IDs
 ```
 
-You can also get help on commands, like `mstan concrete-model --help`.
+You can also use `--help` for individual commands, like `mstan concrete-model --help`.
 
 ### Model IDs
 *Model IDs* are strings that are used to uniquely reference individual models in a network. For example, the following string is the ID of a model from the ["simple" example](http://ryanbe.me/modular-stan.html?example=simple) network:
 ```
 Mean:standard,Stddev:lognormal,StddevInformative:yes
 ```
-It's a comma-separated list of the module selections that make up that model; in this case `Mean` is implemented by `standard` and so on.
+Model IDs are comma-separated lists of the module selections that make up that model; in this case `Mean` is implemented by `standard` and so on.
+
+You can also find model ID of a selected model on the website in the text box above the module tree.
 
 ### Examples:
 These examples will use the ["simple" example](http://ryanbe.me/modular-stan.html?example=simple).
@@ -96,17 +100,40 @@ Mean:standard,Stddev:lognormal,StddevInformative:yes
 Mean:standard,Stddev:standard
 ```
 
-Get all model IDs and write them to "models.txt":
+Produce an image of the model graph:
 ```
 > mstan -f examples/simple.m.stan model-graph
 model_graph.svg
-> open model_graph.svg
 ```
-![image info](https://github.com/rybern/mstan/blob/334df7f5afebf0ace665a5ac7bbacfde9f13c0d2/example-images/model_graph.svg)
-![image info](./example-images/simple_ex_module_tree.svg)
 
+Produce an image of the module tree:
+```
+> mstan -f examples/simple.m.stan module-tree
+module_tree.svg
+```
 
-# Running the "Bernoulli" Example
+Print out diagnostics and produce an image of the module tree:
+```
+> mstan -f examples/simple.m.stan module-tree -v
+============== Parsed program: ===============
+signatures: ...
+...
+============== Modular tree:     ===============
+(root)
+  [Mean]
+    (normal)
+    (standard)
+  [Stddev]
+    (lognormal)
+      [StddevInformative]
+        (no)
+        (yes)
+    (standard)
+============== Results:      ===============
+module_tree.svg
+```
+
+# Running `graph_search.py`
 
 Basic example with this modular stan program:
 ```
@@ -140,7 +167,7 @@ module "uninformative" ThetaPrior(theta) {
 From root, run `python graph_search.py examples/bernoulli.m.stan examples/bernoulli_data.json`.
 The first argument is the modular stan file and the second is input data.
 
-# Running the "Birthday" Example
+# Running the "Birthday" example
 
 My translation of the birthday case study into a modular Stan program for can be found at: `examples/birthday/birthday.m.stan`.
 

@@ -44,8 +44,9 @@ implID :: ImplID -> Text
 implID (ImplID (SigName s) (ImplName i)) = s <> ":" <> i
 implID Root = "root"
 
-implLabel :: ImplName -> Attribute
-implLabel (ImplName i) = toLabel i
+implLabel :: ImplID -> Attribute
+implLabel (ImplID _ (ImplName i)) = toLabel i
+implLabel Root = toLabel ("root" :: Text)
 
 sigID :: SigName -> Text
 sigID (SigName s) = s
@@ -58,7 +59,7 @@ modelNodeNode (ModelNode m) = DN $ DotNode m [toLabel m]
 sigNodeNode :: SigName -> DotStatement Text
 sigNodeNode s = DN $ DotNode (sigID s) [sigLabel s, Shape BoxShape]
 implNodeNode :: ImplID -> DotStatement Text
-implNodeNode i = DN $ DotNode (implID i) [implLabel (name i)]
+implNodeNode i = DN $ DotNode (implID i) [implLabel i]
 deltaModuleEdge
   :: (ModelNode, ModelNode, ModuleDelta) -> DotStatement Text
 deltaModuleEdge (ModelNode m1, ModelNode m2, ModuleDelta _ _ _) =

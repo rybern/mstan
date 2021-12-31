@@ -30,9 +30,9 @@ execOptions (RunOptions file debugParse maybeOutFile command) = do
       printModularProgram program
       -- putStrLn "============== Model graph:      ==============="
       -- print $ modelGraph program
-      putStrLn "============== Modular tree:     ==============="
+      putStrLn "============== Modular tree:   ==============="
       printModularTree program
-      putStrLn "============== Results:      ==============="
+      putStrLn "============== Results:        ==============="
     result <- Text.unlines <$> execCommand program command
     case maybeOutFile of
       Nothing -> Text.putStr result
@@ -52,7 +52,7 @@ execCommand prog GetModelGraph = do
   return [Text.pack filePath]
 execCommand prog GetModuleGraph = do
   let moduleGraph = moduleTreeGraphviz prog
-  let graphName = "module_graph"
+  let graphName = "module_tree"
   filePath  <- publishGraph graphName moduleGraph
   return [Text.pack filePath]
 execCommand prog GetAllModels = do

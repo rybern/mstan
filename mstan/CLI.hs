@@ -75,7 +75,7 @@ parserExecCommand = hsubparser
                  (progDesc "Produce Graphviz image and text files of the model graph of the modular Stan program.")
            )
     <> OptParse.command
-           "module-graph"
+           "module-tree"
            (info (pure GetModuleGraph)
                  (progDesc "Produce Graphviz image and text files of the module graph of the modular Stan program.")
            )
