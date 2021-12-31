@@ -102,7 +102,7 @@ Get all model IDs and write them to "models.txt":
 model_graph.svg
 > open model_graph.svg
 ```
-![image info](./example-images/simple_ex_model_graph.svg)
+![image info](https://github.com/rybern/mstan/blob/334df7f5afebf0ace665a5ac7bbacfde9f13c0d2/example-images/model_graph.svg)
 ![image info](./example-images/simple_ex_module_tree.svg)
 
 
