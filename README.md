@@ -1,11 +1,10 @@
 This repository contains:
- * `mstan`, a compiler that implements "swappable modules" for the Stan language. See [this blog post](https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/) for an introduction, and check out [the website](http://ryanbe.me/modular-stan.html) for online interactive visualizations of modular programs.
-   `mstan` is built from the `lib` and `mstan` directories with `stack` (instructions below).
- * `mstan-server`, a backend WebSocket server for the http://ryanbe.me/modular-stan.html website. `mstan-server` is built from the `lib` and `mstan-server` directories with `stack` (instructions below).
- * `model_search.py`, a simple proof-of-concept model search for the network of models. `model_search.py` has its own command-line interface and requires `mstan` to operate.
+ * **`mstan`**, a compiler that implements a "swappable module" system for the Stan language. See [this blog post](https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/) for an introduction, and check out [the website](http://ryanbe.me/modular-stan.html) for interactive visualizations of modular programs.
+ * **`model_search.py`**, a simple proof-of-concept model search for the network of models.
+ * **`mstan-server`**, the backend server for [the Modular Stan website](http://ryanbe.me/modular-stan.html).
 
 # Installation
- 1. Install [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/)
+ 1. Install [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
  2. Make sure [Graphviz](https://graphviz.org/) is installed.
  3. Run `stack install`. This should build `mstan` and `mstan-server` and copy them to your PATH.
  4. To use `model_search.py` with ELPD evaluation, you'll need `Rscript`, `python`, `cmdstan`, and the following R dependencies: 
@@ -19,9 +18,7 @@ This repository contains:
     * cmdstanr
     * posterior
 
-    If `cmdstanr` has trouble finding `cmdstan`, make sure the `CMDSTAN` environment variable is set correctly.
-
-    You can use [`nix`](https://nixos.org/download.html) to manage these dependencies by running everything inside a `nix-shell`. `nix-shell` will default to the appropriate environment by reading the `default.nix` file. You may still need to install `cmdstan` separately from `nix`.
+    You can use [`nix`](https://nixos.org/download.html) to manage these dependencies with the `nix-shell` command. `nix-shell` will default to the appropriate environment specified by the `default.nix` file. You may still need to install `cmdstan` separately from `nix`.
  
 # Using the `mstan` command-line interface
 You can explore `mstan` usage with `mstan --help`. You can also get help on commands, like `mstan concrete-model --help`.
