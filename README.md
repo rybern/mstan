@@ -59,8 +59,8 @@ Model IDs are comma-separated lists of the module selections that make up that m
 
 You can also find model ID of a selected model on the website in the text box above the module tree.
 
-### Examples:
-These examples will use the ["simple" example](http://ryanbe.me/modular-stan.html?example=simple).
+### Usage examples
+These command-line examples will use the ["simple"](http://ryanbe.me/modular-stan.html?example=simple) example modular program.
 
 Get an arbitrary model ID:
 ```
