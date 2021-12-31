@@ -18,7 +18,9 @@ This repository contains:
     * data_table
     * cmdstanr
     * posterior
+
     If `cmdstanr` has trouble finding `cmdstan`, make sure the `CMDSTAN` environment variable is set correctly.
+
     You can use [`nix`](https://nixos.org/download.html) to manage these dependencies by running everything inside a `nix-shell`. `nix-shell` will default to the appropriate environment by reading the `default.nix` file. You may still need to install `cmdstan` separately from `nix`.
  
 # Using the `mstan` command-line interface
