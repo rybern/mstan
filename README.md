@@ -6,17 +6,28 @@ This repository contains:
 
 # Installation
  1. Install [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/)
- 3. Build the `mstan` compiler. [Graphviz](https://graphviz.org/) is a dependency. Easiest is to run `stack install`, which builds the program and tries to add the executable to your PATH. Another option is to use `stack build`, which will print the installation location, and then add that location to your PATH or copy the binary to where you need it.
- 4. To use ELPD evaluation, you'll need R dependencies: Rscript, cmdstanr, and some other dependencies (see `default.nix` if you're having trouble finding dependencies). If you want, you can use `nix` to install the R dependencies by running everything inside a `nix-shell` (it'll default to setting up the appropriate environment using `default.nix`). If you use nix, you should comment out the last line of `default.nix` that sets the `CMDSTAN` variable - sorry about that.
- 5. You'll also need to have `cmdstan` installed and have the `CMDSTAN` environment variable set so that `cmdstanr` can find it. I don't think `nix` currently properly installs `cmdstan`.
+ 2. Make sure [Graphviz](https://graphviz.org/) is installed.
+ 3. Run `stack install`. This should build `mstan` and `mstan-server` and copy them to your PATH.
+ 4. To use `model_search.py` with ELPD evaluation, you'll need `Rscript`, `python`, `cmdstan`, and the following R dependencies: 
+    * tidyverse
+    * loo
+    * abind
+    * distributional
+    * tensorA
+    * jsonlite
+    * data_table
+    * cmdstanr
+    * posterior
+    If `cmdstanr` has trouble finding `cmdstan`, make sure the `CMDSTAN` environment variable is set correctly.
+    You can use [`nix`](https://nixos.org/download.html) to manage these dependencies by running everything inside a `nix-shell`. `nix-shell` will default to the appropriate environment by reading the `default.nix` file. You may still need to install `cmdstan` separately from `nix`.
  
 # Using the `mstan` command-line interface
-You can explore `mstan` commands with `mstan --help`. You can also use help on partial commands, like `mstan --help`.
+You can explore `mstan` usage with `mstan --help`. You can also get help on commands, like `mstan concrete-model --help`.
 
 Here is the output of `mstan --help`:
 ```
 Usage: mstan (-f|--modular-stan-file FILE) [-v|--debug-parse] 
-                  [-o|--output-file FILE] COMMAND
+             [-o|--output-file FILE] COMMAND
   Execute model network command
 
 Available options:
@@ -27,14 +38,15 @@ Available options:
   -h,--help                Show this help text
 
 Available commands:
-  get-neighbors            Get model IDs of the neighbors of a model
-  get-model                Get the concrete Stan model given a model ID
-  get-module-graph         Generate a representation of the module graph of the
-                           modular Stan program.
-  get-model-graph          Generate a representation of the model graph of the
-                           modular Stan program.
-  get-first-model          Get an arbitrary model ID
-  get-all-models           Get all model IDs
+  neighbors                Return the model IDs of the neighbors of the given
+                           model
+  concrete-model           Return the concrete Stan model given a model ID
+  module-graph             Produce Graphviz image and text files of the module
+                           graph of the modular Stan program.
+  model-graph              Produce Graphviz image and text files of the model
+                           graph of the modular Stan program.
+  first-model              Return an arbitrary model ID
+  list-models              Return all model IDs
 ```
 
 # Running the "Bernoulli" Example

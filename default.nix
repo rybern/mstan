@@ -77,6 +77,4 @@ stdenvNoCC.mkDerivation rec {
     gcc9
     python3
   ];
-
-  CMDSTAN = "~/projects/cmdstan-g++10/";
 }

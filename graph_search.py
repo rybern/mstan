@@ -53,17 +53,17 @@ class ModelGraph:
     def getConcreteModel(self, modelID):
         """Build a concrete Stan program from a model ID and return its filepath."""
         outFile = model_dir + self.modularStanFileBasename + "_" + modelID + ".stan"
-        self.execCommand(["-o", outFile, "get-model", "-s", modelID])
+        self.execCommand(["-o", outFile, "concrete-model", "-s", modelID])
         return outFile
 
     def getModelNeighbors(self, modelID):
         """Return a list of the models that neighbor the given model in the model graph"""
-        unparsedNeighbors = self.execCommand(["get-neighbors", "-s", modelID])
+        unparsedNeighbors = self.execCommand(["neighbors", "-s", modelID])
         return list(filter(lambda s: s, unparsedNeighbors.split('\n')))
 
     def getFirstModel(self):
         """Get an arbitrary model ID from the model graph"""
-        return self.execCommand(["get-first-model"])
+        return self.execCommand(["first-model"])
 
 def modelGraphTest(modelGraph, modelEvaluator, firstModel = None):
     """Print out some example usage of the model graph"""
