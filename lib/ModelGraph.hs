@@ -4,9 +4,9 @@
 module ModelGraph (
     modelGraph
   , allSelections
-  , arbitrarySelection
   , modelNeighbors
   , decoratedModelGraph
+  , firstSelection
   , modelGraphviz
   ) where
 
@@ -44,12 +44,14 @@ modelGraph p = refold joinGraphs (growTree p) (Impl Root)
 allSelections :: ModularProgram -> Set Selection
 allSelections = vertexSet . modelGraph
 
-arbitrarySelection :: ModularProgram -> Selection
-arbitrarySelection = Set.findMin . allSelections
-
 modelNeighbors :: ModularProgram -> Selection -> Set Selection
 modelNeighbors p s = neighbours s . toUndirected $ modelGraph p
 
+-- Faster than `Set.head . allSelections`
+firstSelection :: ModularProgram -> Selection
+firstSelection p = refold joinFirstSelection (growTree p) (Impl Root)
+  where joinFirstSelection (SigBranch _ implSels) = head implSels
+        joinFirstSelection (ImplBranch sel sigSels) = sel <> mconcat sigSels
 
 ------
 -- Visualizations

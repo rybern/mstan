@@ -59,7 +59,7 @@ linesModularCode (ModularCode {..}) = concat $ catMaybes
 modularProgramLines :: ModularProgram -> [Text]
 modularProgramLines (ModularProgram {..}) = concat $ catMaybes
   [ Just ["signatures:"]
-  , Just . indent 1 . map (unSigName . snd) . Set.toList $ signatures
+  , Just . indent 1 . map (unSigName . snd) $ signatures
   , Just ["implementations:"]
   , Just . concat . map (starIndent 2 . implementationLines) $ implementations
   , (("topFunctions:" :) . indent 1 . linesModularCode) <$> functions >>= whenNonempty

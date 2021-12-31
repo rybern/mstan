@@ -79,7 +79,7 @@ implNameText Root = Nothing
 -- Constraint:
 -- for all `implementations`, the body follows the matching signature in `signatures`
 data ModularProgram = ModularProgram
-  { signatures :: Set (Type, SigName), -- Constraints: Unique SigName
+  { signatures :: [(Type, SigName)], -- Constraints: Unique SigName, list for order
     implementations :: [ModuleImplementation ModularCode], -- List to order the module tree
     topProgram :: Program ModularCode
   } deriving (Show)

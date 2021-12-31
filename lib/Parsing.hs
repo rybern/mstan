@@ -6,6 +6,7 @@
 module Parsing where
 
 import           Data.Attoparsec.Text
+import           Data.List                      ( nub )
 import           Data.Map                       ( Map )
 import qualified Data.Map                      as Map
 import           Data.Maybe
@@ -396,18 +397,20 @@ parserModularProgram = do
     (topFunctions, dataVars, topParams, tdCode, tpCode, modelCode, gqCode) <- parserTop
     ignore
     implementations <- many' (parserModule <* ignore)
-    let signatures = Set.unions $ map fieldSignatures implementations
+    -- let signatures = map ((Type "",) . implSignature) implementations
+    let allFieldSignatures = Set.unions $ map fieldSignatures implementations
+        signatures = nub $ map ((Type "",) . implSignature) implementations
     return $ ModularProgram
-        { signatures      = Set.map ((Type "",) . fst) signatures
-        , implementations = map (fmap (findModules signatures)) implementations
+        { signatures      = signatures
+        , implementations = map (fmap (findModules allFieldSignatures)) implementations
         , topProgram      = Program {
               progData         = dataVars
             , progBlocks       = Blocks {
-                  functions    = findModules signatures <$> topFunctions
-                , td           = findModules signatures <$> tdCode
-                , tp           = findModules signatures <$> tpCode
-                , model        = Just $ findModules signatures modelCode
-                , gq           = findModules signatures <$> gqCode
+                  functions    = findModules allFieldSignatures <$> topFunctions
+                , td           = findModules allFieldSignatures <$> tdCode
+                , tp           = findModules allFieldSignatures <$> tpCode
+                , model        = Just $ findModules allFieldSignatures modelCode
+                , gq           = findModules allFieldSignatures <$> gqCode
                 , params       = topParams
                 }
             }

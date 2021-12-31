@@ -44,7 +44,7 @@ execCommand prog (GetNeighbors selection) = return $
 execCommand prog (GetConcrete selection) = return $
   linesConcreteProgram $ selectModules prog selection
 execCommand prog GetMinimumSelection = return $
-  [showSelection $ arbitrarySelection prog]
+  [showSelection $ firstSelection prog]
 execCommand prog GetModelGraph = do
   let graphviz = modelGraphviz prog
   let graphName = "model_graph"

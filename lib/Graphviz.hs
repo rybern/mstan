@@ -33,7 +33,7 @@ publishGraph fp g = do
         svgFP = fp <> ".svg"
 
 
-data ModuleGraph = ModuleGraph [ImplID] (Set SigName) (Map ImplID (Set SigName)) (Map SigName (Set ImplName)) deriving (Eq, Ord, Show)
+data ModuleGraph = ModuleGraph [ImplID] [SigName] (Map ImplID [SigName]) (Map SigName [ImplName]) deriving (Eq, Ord, Show)
 
 data ModelNode = ModelNode Text deriving (Eq, Ord, Show)
 data ModuleDelta = ModuleDelta Text Text Text deriving (Eq, Ord, Show)
@@ -72,8 +72,8 @@ implSigEdge (s, i) = DE $ DotEdge (sigID s) (implID i) []
 selectionImplIDs :: Selection -> Map SigName ImplID
 selectionImplIDs = Map.mapWithKey (\s i -> ImplID s i)
 
-implIDs :: Map SigName (Set ImplName) -> Map SigName (Set ImplID)
-implIDs = Map.mapWithKey (\s impls -> Set.map (ImplID s) impls)
+implIDs :: Map SigName [ImplName] -> Map SigName [ImplID]
+implIDs = Map.mapWithKey (\s impls -> map (ImplID s) impls)
 
 moduleGraphToDot :: ModuleGraph -> DotGraph Text
 moduleGraphToDot (ModuleGraph impls sigs toSigs toImpls) = DotGraph
@@ -82,13 +82,13 @@ moduleGraphToDot (ModuleGraph impls sigs toSigs toImpls) = DotGraph
     , graphID         = Nothing
     , graphStatements = mconcat
         [ Seq.fromList . map implNodeNode $ impls
-        , Seq.fromList . Set.toList . Set.map sigNodeNode $ sigs
+        , Seq.fromList . map sigNodeNode $ sigs
         , Seq.fromList . fmap implSigEdge . adjToList . implIDs $ toImpls
         , Seq.fromList . fmap sigImplEdge . adjToList $ toSigs
         -- , legend
         ]
     }
-  where adjToList = concatMap (\(a, sb) -> map (\b -> (a, b)) (Set.toList sb)) . Map.toList
+  where adjToList = concatMap (\(a, sb) -> map (\b -> (a, b)) sb) . Map.toList
         -- legend =
         --   Seq.fromList [ DN $ DotNode "legend_impl" [toLabel ("[Implementation]" :: Text)]
         --                , DN $ DotNode "legend_sig" [toLabel ("[Signature]" :: Text), Shape BoxShape]]

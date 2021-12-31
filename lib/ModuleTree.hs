@@ -2,7 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TupleSections     #-}
-module ModuleTree where
+module ModuleTree (
+    growTree
+  , printModularTree
+  , moduleTreeGraphviz
+  , ModuleBranch (..)
+  , Node (..)
+  ) where
 
 
 
@@ -10,6 +16,8 @@ import           Data.List                ( groupBy, sortOn )
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
 import           Data.Maybe
+-- import           Data.Set.Ordered                 (OSet)
+-- import qualified Data.Set.Ordered                 as OSet
 import           Data.Set                 (Set)
 import qualified Data.Set                 as Set
 import           Data.Text                (Text)
@@ -26,24 +34,27 @@ import           Indent
 ------
 
 -- Mapping from each signature to all of its implementations
-sigImpls :: ModularProgram -> Map SigName (Set ImplName)
+sigImpls :: ModularProgram -> Map SigName [ImplName]
 sigImpls p = Map.fromList
         . map (\impls -> let sig = implSignature (head impls)
-                         in  (sig, Set.fromList $ map implName impls))
+                         in  (sig, map implName impls))
         . groupBy (\x y -> implSignature x == implSignature y)
         . sortOn implSignature
         $ implementations p
 
 -- Mapping from each implementation to all of its signatures
-implSigs :: ModularProgram -> Map ImplID (Set SigName)
+implSigs :: ModularProgram -> Map ImplID [SigName]
 implSigs p = Map.insert Root (moduleSigs (topProgram p))
              . Map.fromList
              . map (\impl -> (ImplID (implSignature impl) (implName impl), moduleSigs impl))
             $ implementations p
   where
     codeSigs = Set.map (\(SigName sig, _, _) -> SigName sig) . moduleInstances
-    moduleSigs :: Foldable t => t ModularCode -> Set SigName
-    moduleSigs = Set.unions . concatMap (\code -> [codeSigs code])
+    moduleSigs :: Foldable t => t ModularCode -> [SigName]
+    moduleSigs = orderSigs . Set.unions . concatMap (\code -> [codeSigs code])
+
+    orderSigs :: Set SigName -> [SigName]
+    orderSigs set = filter (`Set.member` set) . map snd $ signatures p
 
 -- Pattern functor for module tree
 data ModuleBranch f = SigBranch SigName [f] | ImplBranch Selection [f]
@@ -55,11 +66,11 @@ data Node = Impl ImplID | Sig SigName
 growTree :: ModularProgram -> Node -> ModuleBranch Node
 growTree p = growTree' (implSigs p) (sigImpls p)
 
-growTree' :: Map ImplID (Set SigName) -> Map SigName (Set ImplName) -> Node -> ModuleBranch Node
+growTree' :: Map ImplID [SigName] -> Map SigName [ImplName] -> Node -> ModuleBranch Node
 growTree' iToS _ (Impl impl) =
-  ImplBranch (idToSel impl) . map Sig . Set.toList . fromJust $ Map.lookup impl iToS
+  ImplBranch (idToSel impl) . map Sig . fromJust $ Map.lookup impl iToS
 growTree' _ sToI (Sig sig) =
-  SigBranch sig . map (Impl . ImplID sig) . Set.toList . fromJust $ Map.lookup sig sToI
+  SigBranch sig . map (Impl . ImplID sig) . fromJust $ Map.lookup sig sToI
 
 idToSel :: ImplID -> Selection
 idToSel Root              = Map.empty
@@ -88,7 +99,7 @@ moduleTreeGraphviz :: ModularProgram -> Graphviz
 moduleTreeGraphviz p = moduleGraphToDot
     (ModuleGraph allImpls allSigs (implSigs p) (sigImpls p))
   where
-    allSigs  = Set.map (\(_, SigName sig) -> SigName sig) (signatures p)
+    allSigs  = map (\(_, SigName sig) -> SigName sig) (signatures p)
     allImpls = Root : map
         (\impl -> ImplID (implSignature impl) (implName impl))
         (implementations p)
