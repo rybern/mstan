@@ -124,9 +124,11 @@ signatures: ...
 module_tree.svg
 ```
 
-# Running `graph_search.py`
+# Using `graph_search.py`
 
-Basic example with this modular stan program:
+## Basic example: "Bernoulli problem"
+
+This small modular Stan program can be found at `example/bernoulli.m.stan`:
 ```
 data {
   int<lower=0> N;
@@ -155,10 +157,11 @@ module "uninformative" ThetaPrior(theta) {
 }
 ```
 
-From root, run `python graph_search.py examples/bernoulli.m.stan examples/bernoulli_data.json`.
-The first argument is the modular stan file and the second is input data.
+To run a greedy ELPD-maximizing graph search, from the project root directory run `python graph_search.py examples/bernoulli.m.stan examples/bernoulli_data.json`.
 
-# Running the "Birthday" example
+The first argument to `graph_search.py` is the modular stan file and the second is input data.
+
+## Running the "Birthday" example
 
 My translation of the birthday case study into a modular Stan program for can be found at: `examples/birthday/birthday.m.stan`.
 
@@ -196,5 +199,5 @@ Winner:
 
 The search selected the model with ID `Model:model8rhs`. To get the concrete Stan program with this `ID`, run `mstan exec -f examples/birthday/birthday.m.stan get-model -s Model:model8rhs`.
 
-# Troubleshooting
+## Troubleshooting
  * To see the command line calls that are being made to `elpd.R` and `mstan`, set `DEBUG_IO` in `graph_search.py` to `True`
