@@ -6,7 +6,7 @@ module ModuleTree where
 
 
 
-import           Data.List
+import           Data.List                ( groupBy, sortOn )
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
 import           Data.Maybe
@@ -14,7 +14,7 @@ import           Data.Set                 (Set)
 import qualified Data.Set                 as Set
 import           Data.Text                (Text)
 import qualified Data.Text.IO             as Text
-import Data.Fix
+import           Data.Fix                 (refold)
 
 import           Graphviz
 import           Types
@@ -46,20 +46,20 @@ implSigs p = Map.insert Root (moduleSigs (topProgram p))
     moduleSigs = Set.unions . concatMap (\code -> [codeSigs code])
 
 -- Pattern functor for module tree
-data ModuleTree f = SigTree SigName [f] | ImplTree Selection [f]
+data ModuleBranch f = SigBranch SigName [f] | ImplBranch Selection [f]
   deriving Functor
 
 data Node = Impl ImplID | Sig SigName
 
--- Produce one level of tree given a node; for use in `hylo` or `ana`
-growTree :: ModularProgram -> Node -> ModuleTree Node
+-- Produce one level of tree given a node; for use in `refold`
+growTree :: ModularProgram -> Node -> ModuleBranch Node
 growTree p = growTree' (implSigs p) (sigImpls p)
 
-growTree' :: Map ImplID (Set SigName) -> Map SigName (Set ImplName) -> Node -> ModuleTree Node
+growTree' :: Map ImplID (Set SigName) -> Map SigName (Set ImplName) -> Node -> ModuleBranch Node
 growTree' iToS _ (Impl impl) =
-  ImplTree (idToSel impl) . map Sig . Set.toList . fromJust $ Map.lookup impl iToS
+  ImplBranch (idToSel impl) . map Sig . Set.toList . fromJust $ Map.lookup impl iToS
 growTree' _ sToI (Sig sig) =
-  SigTree sig . map (Impl . ImplID sig) . Set.toList . fromJust $ Map.lookup sig sToI
+  SigBranch sig . map (Impl . ImplID sig) . Set.toList . fromJust $ Map.lookup sig sToI
 
 idToSel :: ImplID -> Selection
 idToSel Root              = Map.empty
@@ -70,10 +70,10 @@ idToSel (ImplID sig impl) = Map.singleton sig impl
 ------
 
 -- Combine a node's subtrees' text representations
-joinTextLines :: ModuleTree [Text] -> [Text]
-joinTextLines (SigTree (SigName sig) implLines) =
+joinTextLines :: ModuleBranch [Text] -> [Text]
+joinTextLines (SigBranch (SigName sig) implLines) =
   "[" <> sig <> "]" : concatMap (indent 1) implLines
-joinTextLines (ImplTree sel sigLines) =
+joinTextLines (ImplBranch sel sigLines) =
   selLine ++ concatMap (indent 1) sigLines
   where selLine = case Map.elems sel of
           [] -> ["(root)"]
@@ -81,7 +81,7 @@ joinTextLines (ImplTree sel sigLines) =
 
 -- Build up a modular tree, fold it down to text lines, print it
 printModularTree :: ModularProgram -> IO ()
-printModularTree p = mapM_ Text.putStrLn $ hylo joinTextLines (growTree p) (Impl Root)
+printModularTree p = mapM_ Text.putStrLn $ refold joinTextLines (growTree p) (Impl Root)
 
 -- Representation of a modular tree in Graphviz format for output
 moduleTreeGraphviz :: ModularProgram -> Graphviz

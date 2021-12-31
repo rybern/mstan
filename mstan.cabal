@@ -46,5 +46,5 @@ executable mstan
                        text,
                        websockets,
                        algebraic-graphs,
-                       data-fix
+                       data-fix >= 0.3.0
  

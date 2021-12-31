@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import           Data.Text                      ( Text )
@@ -21,7 +20,6 @@ import DiagnosticPrinting
 main :: IO ()
 main = do
   options <- parseOptions
-  -- putStrLn $ "Executing options: " ++ show options
   execOptions options
 
 execOptions :: RunOptions -> IO ()

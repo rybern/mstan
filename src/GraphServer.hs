@@ -14,7 +14,7 @@ import qualified Data.Set                      as Set
 import           Data.Map                       ( Map )
 import           System.Random
 import           Data.Char
-import           Data.List
+import           Data.List                      ( sort )
 
 import           Types
 import           Printing
@@ -31,6 +31,7 @@ data GraphServerOptions = GraphServerOptions {
   }
   deriving Show
 
+defaultGraphServerOptions :: GraphServerOptions
 defaultGraphServerOptions = GraphServerOptions
     { wsOptions          = defaultWSServerOptions
     , graphFileDirectory = "/var/www/html/"
@@ -48,24 +49,26 @@ data Command = ModelGraphCmd ModularProgram
 
 
 readCommand :: Text -> IO Command
-readCommand msg = do
-    let (cmd : lines) = Text.lines msg
-    case Text.strip cmd of
+readCommand msg = case Text.lines msg of
+    (cmd : body) ->
+      case Text.strip cmd of
         "model-graph" ->
-            return . ModelGraphCmd . parseModularProgram $ Text.unlines lines
+          return . ModelGraphCmd . parseModularProgram $ Text.unlines body
         "module-graph" ->
-            return . ModuleGraphCmd . parseModularProgram $ Text.unlines lines
-        "select" -> do
-            let (selectionsString : rest) = lines
-            let selections =
-                    case parseSelections (Text.strip selectionsString) of
-                        Nothing -> error "Couldn't parse string"
-                        Just m  -> m
-            return $ SelectCmd selections
-                               (parseModularProgram (Text.unlines rest))
+          return . ModuleGraphCmd . parseModularProgram $ Text.unlines body
+        "select" -> case body of
+                      (selectionsString : rest) -> do
+                        let selections =
+                              case parseSelections (Text.strip selectionsString) of
+                                Nothing -> error "Couldn't parse string"
+                                Just m  -> m
+                        return $ SelectCmd selections (parseModularProgram (Text.unlines rest))
+                      _ -> error . Text.unpack $ "Failed to parse command " <> msg
+        _ -> error . Text.unpack $ "Failed to parse command " <> msg
+    _ -> error . Text.unpack $ "Failed to parse command " <> msg
 
 generateID :: IO String
-generateID = (show . abs) <$> (randomIO :: IO Int)
+generateID = show . abs <$> (randomIO :: IO Int)
 
 runCommand :: FilePath -> Command -> IO Text
 runCommand _ (SelectCmd selections prog) =
@@ -74,7 +77,7 @@ runCommand fileDir (ModelGraphCmd prog) = do
     let graph = decoratedModelGraph prog
 
     fileName <-
-        (\id -> "graphs/temp_model_graph_" <> id <> ".json") <$> generateID
+        (\fileID -> "graphs/temp_model_graph_" <> fileID <> ".json") <$> generateID
     let filePath = fileDir <> fileName
 
     Text.writeFile fileName (modelGraphAlchemy graph)
@@ -93,7 +96,6 @@ runCommand fileDir (ModuleGraphCmd prog) = do
     putStrLn $ "making file " <> filePath
     return . Text.pack $ fileName
 
--- data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, ModuleDelta)] deriving (Eq, Ord, Show)
 modelGraphAlchemy :: ModelGraph -> Text
 modelGraphAlchemy (ModelGraph nodes edges) = toObj
     [ ("edges", toArr (map edgeObj edges))
