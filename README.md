@@ -1,4 +1,4 @@
-This repository contains:
+## This repository contains:
  * **`mstan`**, a compiler that implements a "swappable module" system for [Stan](https://mc-stan.org/). See [this blog post](https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/) for an introduction and check out [the website](http://ryanbe.me/modular-stan.html) for interactive visualizations of modular programs.
  * **`model_search.py`**, a simple proof-of-concept model search for the network of models.
  * **`mstan-server`**, the backend server for [the Modular Stan website](http://ryanbe.me/modular-stan.html).
