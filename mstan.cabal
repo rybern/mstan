@@ -1,6 +1,6 @@
 name:                mstan
 version:             0.1.0.0
-homepage:            https://github.com/githubuser/mockup#readme
+homepage:            https://github.com/rybern/mstan
 license:             BSD3
 license-file:        LICENSE
 author:              Ryan Bernstein
@@ -11,8 +11,33 @@ build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
+library
+  exposed-modules:     Indent,
+                       ModuleTree,
+                       ModelGraph,
+                       ConcreteProgram,
+                       Parsing,
+                       Graphviz,
+                       Types,
+                       Printing
+  hs-source-dirs:      lib
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Wincomplete-record-updates
+                       -Wincomplete-uni-patterns
+                       -Wredundant-constraints
+  build-depends:       base >= 4.7 && < 5,
+                       containers >= 0.6.2.1,
+                       text,
+                       attoparsec,
+                       process,
+                       graphviz,
+                       algebraic-graphs,
+                       data-fix >= 0.3.0
+
 executable mstan
-  hs-source-dirs:      src
+  hs-source-dirs:      mstan
   main-is:             Main.hs
   default-language:    Haskell2010
   ghc-options:         -Wall
@@ -21,30 +46,31 @@ executable mstan
                        -Wincomplete-uni-patterns
                        -Wredundant-constraints
   other-modules:       CLI,
-                       GraphServer,
-                       ModuleTree,
-                       ModelGraph,
-                       ConcreteProgram,
-                       Parsing,
-                       Graphviz,
-                       Types,
-                       Printing,
-                       DiagnosticPrinting,
-                       WebSocketServer,
-                       Indent
-  build-depends:       attoparsec,
-                       base >= 4.7 && < 5,
-                       bytestring >= 0.10.10.1,
-                       clock,
+                       DiagnosticPrinting
+  build-depends:       base >= 4.7 && < 5,
                        containers >= 0.6.2.1,
-                       directory,
-                       graphviz,
-                       network-simple,
                        optparse-applicative,
-                       process,
+                       text,
+                       mstan
+
+executable mstan-server
+  hs-source-dirs:      mstan-server
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Wincomplete-record-updates
+                       -Wincomplete-uni-patterns
+                       -Wredundant-constraints
+  other-modules:       GraphServer,
+                       WebSocketServer
+                       CLI
+  build-depends:       base >= 4.7 && < 5,
+                       bytestring >= 0.10.10.1,
+                       containers >= 0.6.2.1,
+                       optparse-applicative,
+                       directory,
                        random,
                        text,
                        websockets,
-                       algebraic-graphs,
-                       data-fix >= 0.3.0
- 
+                       mstan

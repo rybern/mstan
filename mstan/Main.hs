@@ -14,7 +14,7 @@ import ConcreteProgram
 import Graphviz
 import Types
 import CLI
-import GraphServer
+
 import DiagnosticPrinting
 
 main :: IO ()
@@ -23,8 +23,7 @@ main = do
   execOptions options
 
 execOptions :: RunOptions -> IO ()
-execOptions (Server serverOptions) = runGraphServer serverOptions
-execOptions (Exec file debugParse maybeOutFile command) = do
+execOptions (RunOptions file debugParse maybeOutFile command) = do
     program <- Parsing.readModularProgram file
     when (debugParse == DebugParse) $ do
       putStrLn "============== Parsed program: ==============="

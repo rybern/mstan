@@ -4,7 +4,6 @@ module CLI where
 import qualified Data.Text                     as Text
 import           Options.Applicative
 
-
 import           GraphServer
 import           Types
 import qualified Parsing
@@ -17,7 +16,6 @@ data RunOptions =
   | Exec MStanFile DebugParse (Maybe FilePath) ExecCommand
   deriving Show
 
-
 data ExecCommand =
     GetNeighbors Selection
   | GetConcrete Selection
@@ -27,24 +25,10 @@ data ExecCommand =
   | GetAllModels
   deriving Show
 
-parseOptions :: IO RunOptions
+parseOptions :: IO GraphServerOptions
 parseOptions = execParser
-    (info (parserOptions <**> helper)
-          (fullDesc <> progDesc "A suite of tools for modular Stan files")
-    )
-
-parserOptions :: Parser RunOptions
-parserOptions = hsubparser
-    (  command
-            "server"
-            (info (Server <$> parserServerOptions)
-                  (progDesc "Run a websocket server for a web frontend")
-            )
-    <> command
-           "exec"
-           (info (Exec <$> parserMStanFile <*> parserDebugParse <*> parserOutputFile <*> parserExecCommand)
-                 (progDesc "Execute model network command")
-           )
+    (info (parserServerOptions <**> helper)
+          (fullDesc <> progDesc "Run a websocket server for a web frontend")
     )
 
 parseSelection :: String -> Selection
