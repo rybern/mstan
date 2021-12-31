@@ -65,19 +65,9 @@ parserOutputFile = (\s -> if null s then Nothing else Just s) <$> strOption
 parserExecCommand :: Parser ExecCommand
 parserExecCommand = hsubparser
     (  OptParse.command
-          "neighbors"
-          (info (GetNeighbors <$> parserSelection)
-                (progDesc "Return the model IDs of the neighbors of the given model")
-          )
-    <> OptParse.command
            "concrete-model"
            (info (GetConcrete <$> parserSelection)
                  (progDesc "Return the concrete Stan model given a model ID")
-           )
-    <> OptParse.command
-           "module-graph"
-           (info (pure GetModuleGraph)
-                 (progDesc "Produce Graphviz image and text files of the module graph of the modular Stan program.")
            )
     <> OptParse.command
            "model-graph"
@@ -85,12 +75,22 @@ parserExecCommand = hsubparser
                  (progDesc "Produce Graphviz image and text files of the model graph of the modular Stan program.")
            )
     <> OptParse.command
-           "first-model"
+           "module-graph"
+           (info (pure GetModuleGraph)
+                 (progDesc "Produce Graphviz image and text files of the module graph of the modular Stan program.")
+           )
+    <>  OptParse.command
+          "model-neighbors"
+          (info (GetNeighbors <$> parserSelection)
+                (progDesc "Return the model IDs of the neighbors of the given model")
+          )
+    <>  OptParse.command
+           "any-model"
            (info (pure GetMinimumSelection)
                  (progDesc "Return an arbitrary model ID")
            )
     <> OptParse.command
-           "list-models"
+           "list-all-models"
            (info (pure GetAllModels)
                  (progDesc "Return all model IDs")
            )

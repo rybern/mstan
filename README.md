@@ -1,5 +1,5 @@
 This repository contains:
- * **`mstan`**, a compiler that implements a "swappable module" system for the Stan language. See [this blog post](https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/) for an introduction, and check out [the website](http://ryanbe.me/modular-stan.html) for interactive visualizations of modular programs.
+ * **`mstan`**, a compiler that implements a "swappable module" system for the Stan language. See [this blog post](https://statmodeling.stat.columbia.edu/2021/11/19/drawing-maps-of-model-space-with-modular-stan/) for an introduction and check out [the website](http://ryanbe.me/modular-stan.html) for interactive visualizations of modular programs.
  * **`model_search.py`**, a simple proof-of-concept model search for the network of models.
  * **`mstan-server`**, the backend server for [the Modular Stan website](http://ryanbe.me/modular-stan.html).
 
@@ -20,10 +20,8 @@ This repository contains:
 
     You can use [`nix`](https://nixos.org/download.html) to manage these dependencies with the `nix-shell` command. `nix-shell` will default to the appropriate environment specified by the `default.nix` file. You may still need to install `cmdstan` separately from `nix`.
  
-# Using the `mstan` command-line interface
-You can explore `mstan` usage with `mstan --help`. You can also get help on commands, like `mstan concrete-model --help`.
-
-Here is the output of `mstan --help`:
+# The `mstan` command-line interface
+You can explore `mstan` usage by running `mstan --help`:
 ```
 Usage: mstan (-f|--modular-stan-file FILE) [-v|--debug-parse] 
              [-o|--output-file FILE] COMMAND
@@ -37,16 +35,76 @@ Available options:
   -h,--help                Show this help text
 
 Available commands:
-  neighbors                Return the model IDs of the neighbors of the given
-                           model
   concrete-model           Return the concrete Stan model given a model ID
-  module-graph             Produce Graphviz image and text files of the module
-                           graph of the modular Stan program.
   model-graph              Produce Graphviz image and text files of the model
                            graph of the modular Stan program.
-  first-model              Return an arbitrary model ID
-  list-models              Return all model IDs
+  module-graph             Produce Graphviz image and text files of the module
+                           graph of the modular Stan program.
+  model-neighbors          Return the model IDs of the neighbors of the given
+                           model
+  any-model                Return an arbitrary model ID
+  list-all-models          Return all model IDs
 ```
+
+You can also get help on commands, like `mstan concrete-model --help`.
+
+### Model IDs
+*Model IDs* are strings that are used to uniquely reference individual models in a network. For example, the following string is the ID of a model from the ["simple" example](http://ryanbe.me/modular-stan.html?example=simple) network:
+```
+Mean:standard,Stddev:lognormal,StddevInformative:yes
+```
+It's a comma-separated list of the module selections that make up that model; in this case `Mean` is implemented by `standard` and so on.
+
+### Examples:
+These examples will use the ["simple" example](http://ryanbe.me/modular-stan.html?example=simple).
+
+Get an arbitrary model ID:
+```
+> mstan -f examples/simple.m.stan any-model
+Mean:standard,Stddev:standard
+```
+
+Get the concrete Stan program for the model ID `Mean:standard,Stddev:standard`:
+```
+> mstan -f examples/simple.m.stan concrete-model -s Mean:standard,Stddev:standard
+data {
+  int N;
+  vector[N] x;
+}
+model {
+  x ~ normal(0, 1);
+}
+```
+
+Get IDs of the models that neighbor `Mean:standard,Stddev:standard`:
+```
+> mstan -f examples/simple.m.stan model-neighbors -s Mean:standard,Stddev:standard
+Mean:normal,Stddev:standard
+Mean:standard,Stddev:lognormal,StddevInformative:no
+Mean:standard,Stddev:lognormal,StddevInformative:yes
+```
+
+Get all model IDs and write them to "models.txt":
+```
+> mstan -f examples/simple.m.stan list-all-models -o models.txt
+> cat models.txt
+Mean:normal,Stddev:lognormal,StddevInformative:no
+Mean:normal,Stddev:lognormal,StddevInformative:yes
+Mean:normal,Stddev:standard
+Mean:standard,Stddev:lognormal,StddevInformative:no
+Mean:standard,Stddev:lognormal,StddevInformative:yes
+Mean:standard,Stddev:standard
+```
+
+Get all model IDs and write them to "models.txt":
+```
+> mstan -f examples/simple.m.stan model-graph
+model_graph.svg
+> open model_graph.svg
+```
+![image info](./example-images/simple_ex_model_graph.svg)
+![image info](./example-images/simple_ex_module_tree.svg)
+
 
 # Running the "Bernoulli" Example
 

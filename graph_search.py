@@ -58,12 +58,12 @@ class ModelGraph:
 
     def getModelNeighbors(self, modelID):
         """Return a list of the models that neighbor the given model in the model graph"""
-        unparsedNeighbors = self.execCommand(["neighbors", "-s", modelID])
+        unparsedNeighbors = self.execCommand(["model-neighbors", "-s", modelID])
         return list(filter(lambda s: s, unparsedNeighbors.split('\n')))
 
     def getFirstModel(self):
         """Get an arbitrary model ID from the model graph"""
-        return self.execCommand(["first-model"])
+        return self.execCommand(["any-model"])
 
 def modelGraphTest(modelGraph, modelEvaluator, firstModel = None):
     """Print out some example usage of the model graph"""
