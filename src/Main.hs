@@ -29,11 +29,13 @@ execOptions (Server serverOptions) = runGraphServer serverOptions
 execOptions (Exec file debugParse maybeOutFile command) = do
     program <- Parsing.readModularProgram file
     when (debugParse == DebugParse) $ do
+      putStrLn "============== Parsed program: ==============="
       printModularProgram program
-      let tree = moduleTree program
-      print tree
-      let graph = treeModelGraph tree
-      print graph
+      -- putStrLn "============== Model graph:      ==============="
+      -- print $ modelGraph program
+      putStrLn "============== Modular tree:     ==============="
+      printModularTree program
+      putStrLn "============== Results:      ==============="
     result <- Text.unlines <$> execCommand program command
     case maybeOutFile of
       Nothing -> Text.putStr result
@@ -47,9 +49,9 @@ execCommand prog (GetConcrete selection) = return $
 execCommand prog GetMinimumSelection = return $
   [showSelection $ arbitrarySelection prog]
 execCommand prog GetModelGraph = do
-  let modelGraph = modelGraphviz prog
+  let graphviz = modelGraphviz prog
   let graphName = "model_graph"
-  filePath  <- publishGraph graphName modelGraph
+  filePath  <- publishGraph graphName graphviz
   return [Text.pack filePath]
 execCommand prog GetModuleGraph = do
   let moduleGraph = moduleTreeGraphviz prog

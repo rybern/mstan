@@ -45,5 +45,6 @@ executable mstan
                        random,
                        text,
                        websockets,
-                       algebraic-graphs
+                       algebraic-graphs,
+                       data-fix
  

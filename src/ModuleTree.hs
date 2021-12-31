@@ -1,7 +1,9 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TupleSections     #-}
 module ModuleTree where
+
 
 
 import           Data.List
@@ -11,97 +13,82 @@ import           Data.Maybe
 import           Data.Set                 (Set)
 import qualified Data.Set                 as Set
 import           Data.Text                (Text)
-import qualified Data.Text                as Text
 import qualified Data.Text.IO             as Text
+import Data.Fix
 
 import           Graphviz
 import           Types
+import           Indent
 
 
 ------
 -- Data structure manipulation for graph/tree abstractions
 ------
 
-{-
-It's unclear whether translating the input program's module structure into mappings is a necessary step.
-
-One issue with a vanilla "tree" data structure is that module "trees" are not necessarily trees, as multiple implementations can refer to the same hole.
--}
-
--- Mapping from each signatures to all of its implementations
+-- Mapping from each signature to all of its implementations
 sigImpls :: ModularProgram -> Map SigName (Set ImplName)
 sigImpls p = Map.fromList
         . map (\impls -> let sig = implSignature (head impls)
-                         in  (sig, Set.fromList $ map (implName) impls))
+                         in  (sig, Set.fromList $ map implName impls))
         . groupBy (\x y -> implSignature x == implSignature y)
         . sortOn implSignature
         $ implementations p
 
 -- Mapping from each implementation to all of its signatures
 implSigs :: ModularProgram -> Map ImplID (Set SigName)
-implSigs p = implSigs'
+implSigs p = Map.insert Root (moduleSigs (topProgram p))
+             . Map.fromList
+             . map (\impl -> (ImplID (implSignature impl) (implName impl), moduleSigs impl))
+            $ implementations p
   where
     codeSigs = Set.map (\(SigName sig, _, _) -> SigName sig) . moduleInstances
-    moduleSigs :: Foldable t => t (ModularCode) -> Set SigName
+    moduleSigs :: Foldable t => t ModularCode -> Set SigName
     moduleSigs = Set.unions . concatMap (\code -> [codeSigs code])
-    implSigs = Map.fromList
-            . map (\impl -> ((Just (implSignature impl), implName impl) , moduleSigs impl))
-            $ implementations p
-    implSigs' =
-        Map.insert (Nothing, ImplName "root") (moduleSigs (topProgram p)) implSigs
 
-data ModuleTree = SigTree [ModuleTree] | ImplTree ImplID [ModuleTree] deriving Show
+-- Pattern functor for module tree
+data ModuleTree f = SigTree SigName [f] | ImplTree Selection [f]
+  deriving Functor
 
-sigTree :: Map ImplID (Set SigName) -> Map SigName (Set ImplName) -> SigName -> ModuleTree
-sigTree iToS sToI sig = SigTree $
-  map (implTree iToS sToI . (Just sig, )) . Set.toList . fromJust $ Map.lookup sig sToI
+data Node = Impl ImplID | Sig SigName
 
-implTree :: Map ImplID (Set SigName) -> Map SigName (Set ImplName) -> ImplID -> ModuleTree
-implTree iToS sToI impl = ImplTree impl $
-  map (sigTree iToS sToI) . Set.toList . fromJust $ Map.lookup impl iToS
+-- Produce one level of tree given a node; for use in `hylo` or `ana`
+growTree :: ModularProgram -> Node -> ModuleTree Node
+growTree p = growTree' (implSigs p) (sigImpls p)
 
-moduleTree :: ModularProgram -> ModuleTree
-moduleTree p = implTree (implSigs p) (sigImpls p) (Nothing, ImplName "root")
+growTree' :: Map ImplID (Set SigName) -> Map SigName (Set ImplName) -> Node -> ModuleTree Node
+growTree' iToS _ (Impl impl) =
+  ImplTree (idToSel impl) . map Sig . Set.toList . fromJust $ Map.lookup impl iToS
+growTree' _ sToI (Sig sig) =
+  SigTree sig . map (Impl . ImplID sig) . Set.toList . fromJust $ Map.lookup sig sToI
 
+idToSel :: ImplID -> Selection
+idToSel Root              = Map.empty
+idToSel (ImplID sig impl) = Map.singleton sig impl
 
 ------
 -- Visualizations
 ------
 
+-- Combine a node's subtrees' text representations
+joinTextLines :: ModuleTree [Text] -> [Text]
+joinTextLines (SigTree (SigName sig) implLines) =
+  "[" <> sig <> "]" : concatMap (indent 1) implLines
+joinTextLines (ImplTree sel sigLines) =
+  selLine ++ concatMap (indent 1) sigLines
+  where selLine = case Map.elems sel of
+          [] -> ["(root)"]
+          impls -> map (\(ImplName impl) -> "(" <> impl <> ")") impls
+
+-- Build up a modular tree, fold it down to text lines, print it
+printModularTree :: ModularProgram -> IO ()
+printModularTree p = mapM_ Text.putStrLn $ hylo joinTextLines (growTree p) (Impl Root)
+
+-- Representation of a modular tree in Graphviz format for output
 moduleTreeGraphviz :: ModularProgram -> Graphviz
 moduleTreeGraphviz p = moduleGraphToDot
     (ModuleGraph allImpls allSigs (implSigs p) (sigImpls p))
   where
     allSigs  = Set.map (\(_, SigName sig) -> SigName sig) (signatures p)
-    allImpls = (Nothing, ImplName "root") : map
-        (\impl -> (Just (implSignature impl), implName impl))
+    allImpls = Root : map
+        (\impl -> ImplID (implSignature impl) (implName impl))
         (implementations p)
-
-drawASCIITreeLevel :: Int -> a -> (a -> Text) -> IO ()
-drawASCIITreeLevel level a showA =
-    Text.putStrLn $ (Text.replicate level " ") <> showA a
-
-drawASCIITree
-    :: (Ord a, Ord b)
-    => Int
-    -> a
-    -> Map a (Set b)
-    -> Map b (Set a)
-    -> (a -> Text)
-    -> (b -> Text)
-    -> IO ()
-drawASCIITree level root next other showA showB = do
-    drawASCIITreeLevel level root showA
-    let nexts = case Map.lookup root next of
-            Just nexts -> nexts
-            Nothing    -> Set.empty
-    mapM_ (\n -> drawASCIITree (level + 2) n other next showB showA) nexts
-
-drawModuleTree :: ModularProgram -> IO ()
-drawModuleTree p = drawASCIITree 0
-                            (Nothing, ImplName "root")
-                            (implSigs p)
-                            (sigImplsAddImplIDs $ sigImpls p)
-                            (\(_, ImplName a) -> "[" <> a <> "]")
-                            (\(SigName a) -> "{" <> a <> "}")
-  where sigImplsAddImplIDs = Map.mapWithKey (\sig impls -> Set.map (Just sig,) impls)

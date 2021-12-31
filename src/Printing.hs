@@ -17,9 +17,9 @@ linesCode :: ConcreteCode -> [Text]
 linesCode = codeText . unconcreteCode
 
 linesBlock :: Text -> [Text] -> [Text]
-linesBlock name lines = concat [
+linesBlock name lines' = concat [
     [name <> " {"]
-  , indent 1 $ lines
+  , indent 1 $ lines'
   , [ "}"]
   ]
 

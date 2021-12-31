@@ -14,7 +14,7 @@ import qualified Data.Text                     as Text
 
 import           Data.GraphViz.Types
 import           Data.GraphViz.Types.Generalised
-import           Data.GraphViz.Attributes.Complete
+import           Data.GraphViz.Attributes.Complete hiding (Root)
 import           Data.GraphViz.Attributes
 import           Data.GraphViz.Commands.IO hiding (runCommand)
 import           System.Process
@@ -41,8 +41,8 @@ data ModuleDelta = ModuleDelta Text Text Text deriving (Eq, Ord, Show)
 data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, ModuleDelta)] deriving (Eq, Ord, Show)
 
 implID :: ImplID -> Text
-implID (Just (SigName s), ImplName i) = s <> ":" <> i
-implID (Nothing, _) = "root"
+implID (ImplID (SigName s) (ImplName i)) = s <> ":" <> i
+implID Root = "root"
 
 implLabel :: ImplName -> Attribute
 implLabel (ImplName i) = toLabel i
@@ -58,7 +58,7 @@ modelNodeNode (ModelNode m) = DN $ DotNode m [toLabel m]
 sigNodeNode :: SigName -> DotStatement Text
 sigNodeNode s = DN $ DotNode (sigID s) [sigLabel s, Shape BoxShape]
 implNodeNode :: ImplID -> DotStatement Text
-implNodeNode i = DN $ DotNode (implID i) [implLabel (snd i)]
+implNodeNode i = DN $ DotNode (implID i) [implLabel (name i)]
 deltaModuleEdge
   :: (ModelNode, ModelNode, ModuleDelta) -> DotStatement Text
 deltaModuleEdge (ModelNode m1, ModelNode m2, ModuleDelta _ _ _) =
@@ -69,10 +69,10 @@ implSigEdge :: (SigName, ImplID) -> DotStatement Text
 implSigEdge (s, i) = DE $ DotEdge (sigID s) (implID i) []
 
 selectionImplIDs :: Selection -> Map SigName ImplID
-selectionImplIDs = Map.mapWithKey (\s i -> (Just s, i))
+selectionImplIDs = Map.mapWithKey (\s i -> ImplID s i)
 
 implIDs :: Map SigName (Set ImplName) -> Map SigName (Set ImplID)
-implIDs = Map.mapWithKey (\s impls -> Set.map (Just s,) impls)
+implIDs = Map.mapWithKey (\s impls -> Set.map (ImplID s) impls)
 
 moduleGraphToDot :: ModuleGraph -> DotGraph Text
 moduleGraphToDot (ModuleGraph impls sigs toSigs toImpls) = DotGraph

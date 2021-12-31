@@ -47,19 +47,19 @@ parserSigLine (FullSigName sigName) = choice
       left <- manyTill anyChar $ char '~'
       let samplee = Expr . Text.strip . Text.pack $ left
       skipSpace
-      string sigName
+      _ <- string sigName
       skipSpace
       args  <- parserArgs
       skipSpace
-      char ';'
+      _ <- char ';'
       return (samplee : args, Nothing)
   , do
       skipSpace
-      string sigName
+      _ <- string sigName
       skipSpace
       args  <- parserArgs
       skipSpace
-      char ';'
+      _ <- char ';'
       return (args, Nothing)
   , do
       left  <- manyTill anyChar $ string sigName
@@ -102,9 +102,9 @@ isVariableChar :: Char -> Bool
 isVariableChar c = isAlphaNum c || c == '_'
 
 replaceCountVar :: Text -> Text -> Text -> (Int, Text)
-replaceCountVar var var' line = (count, line')
+replaceCountVar var var' line = (n, line')
   where tokens = Text.groupBy ((==) `on` isVariableChar) line
-        count = length . filter (== var) $ tokens
+        n = length . filter (== var) $ tokens
         line' = Text.concat . map (\word -> if word == var then var' else word) $ tokens
 
 parserArgs :: Parser [Expr]
@@ -128,26 +128,6 @@ parserTilClosed open = do
             [ char ')' >> (((arg <> ")") <>) <$> parserTilClosed (open - 1))
             , char '(' >> (((arg <> "(") <>) <$> parserTilClosed (open + 1))
             ]
-
-tests :: IO ()
-tests = mapM_
-    (\(sig, code) -> do
-        let Just (args, Just f) = parseSigLine (FullSigName sig) code
-        putStrLn $ "----------"
-        putStrLn $ "code \"" ++ Text.unpack code ++ "\""
-        putStrLn $ "sig \"" ++ Text.unpack sig ++ "\""
-        putStrLn $ "found args \"" ++ show args ++ "\""
-        putStrLn $ "found replace \"" ++ show (f (Expr "TEST")) ++ "\""
-    )
-    [ ("Test"       , "int x = Test()")
-    , ("Test"       , "int x = Test(1, x, 5)")
-    , ("Test"       , "int x = Test((1 + x), (m + (1 + x))) + 1")
-    , ("IRT_LogOdds", "inv_logit(IRT_LogOdds(i, j))")
-    , ( "IRT_LogOdds"
-      , Text.unlines
-          ["", "\n\n y[i, j] ~ bernoulli(inv_logit(IRT_LogOdds(i, j)));\n"]
-      )
-    ]
 
 parserBlock :: Parser header -> Parser body -> Parser (header, body)
 parserBlock parserHeader parserBody = do
@@ -184,23 +164,23 @@ parserCode expectedIndent = do
     ignore
     let matchBody = do
             line <- takeTill (inClass "{};")
-            char ';'
+            _ <- char ';'
             ignore
-            (lines, ret) <- matchLines
-            return $ (line <> ";" : lines, ret)
+            (lines', ret) <- matchLines
+            return $ (line <> ";" : lines', ret)
         matchReturn = do
             ignore
-            string "return "
+            _ <- string "return "
             expr <- takeTill (inClass "{};")
-            char ';'
+            _ <- char ';'
             ignore
             return ([], Just (Expr expr))
         matchBraced = do
             ignore
             braced <- parserBraced
             ignore
-            (lines, ret) <- matchLines
-            return (braced : lines, ret)
+            (lines', ret) <- matchLines
+            return (braced : lines', ret)
 -- matchBraced = do
 --     line <- takeTill (inClass "};")
 --     ignore
@@ -211,8 +191,8 @@ parserCode expectedIndent = do
 --     return (line <> "{" : lines' ++ ["}"] ++ lines, ret)
         matchLines = option ([], Nothing)
             $ choice [matchReturn, matchBody, matchBraced]
-    (lines, codeReturn) <- matchLines
-    return $ Code { codeText = unindentNestedLines expectedIndent lines, codeReturn = codeReturn }
+    (lines', codeReturn) <- matchLines
+    return $ Code { codeText = unindentNestedLines expectedIndent lines', codeReturn = codeReturn }
 
 parserGQ :: Parser Code
 parserGQ = do
@@ -293,18 +273,18 @@ parserSingletonModule = do
 moduleArgs :: Parser [Text]
 moduleArgs = do
     skipSpace
-    char '('
+    _ <- char '('
     implArgs <- sepBy (takeTill (inClass "|),")) (choice [",", "|"])
-    char ')'
+    _ <- char ')'
     return $ map Text.strip implArgs
 
 moduleHead :: Parser args -> Parser (ImplName, SigName, args)
 moduleHead parseArgs = do
-    string "module"
+    _ <- string "module"
     skipSpace
-    char '"'
+    _ <- char '"'
     implName <- takeTill (== '"')
-    char '"'
+    _ <- char '"'
     skipSpace
     sigName  <- takeTill (inClass "( {")
     implArgs <- parseArgs
@@ -359,16 +339,16 @@ fullSigName (SigName sigName, Just (FieldName fieldName)) = FullSigName $ sigNam
 ignore :: Parser ()
 ignore = do
     skipSpace
-    many' $ do
+    _ <- many' $ do
         choice
             [ (do
-                  string "//"
-                  takeTill isEndOfLine
+                  _ <- string "//"
+                  _ <- takeTill isEndOfLine
                   endOfLine
               )
             , (do
-                  string "/*"
-                  manyTill anyChar $ string "*/"
+                  _ <- string "/*"
+                  _ <- manyTill anyChar $ string "*/"
                   return ()
               )
             ]
@@ -441,11 +421,14 @@ parseModularProgram t = case parseOnly parserModularProgram t of
     Left  remainder -> error $ "\"" ++ remainder ++ "\""
     Right prog      -> prog
 
-parseModularProgram' :: Text -> IResult Text ModularProgram
-parseModularProgram' t = parseOnly' parserModularProgram t
+{-
+Old parser test code. Should turn into a test suite
 
 parseModularFile :: FilePath -> IO (IResult Text ModularProgram)
 parseModularFile = (parseModularProgram' <$>) . Text.readFile
+
+parseModularProgram' :: Text -> IResult Text ModularProgram
+parseModularProgram' t = parseOnly' parserModularProgram t
 
 fullTestIRT :: IO (IResult Text ModularProgram)
 fullTestIRT = parseModularFile "irt.modular.stan"
@@ -453,8 +436,11 @@ fullTestIRT = parseModularFile "irt.modular.stan"
 fullTestGolf :: IO (IResult Text ModularProgram)
 fullTestGolf = parseModularFile "golf.m.stan"
 
-paramTest =
-    parseOnly' parserParams $ Text.unlines ["parameters {", "parameters {", "}"]
+parseOnly' :: Parser a -> Text -> IResult Text a
+parseOnly' parser t = case parse parser t of
+    Partial i -> i ""
+    x         -> x
+
 
 -- moduleTest = parseOnly parserModule $ Text.unlines [
 --     "module \"without-guesses\" IRT_Prob(int i, int j) {"
@@ -462,9 +448,29 @@ paramTest =
 --   , "}"
 --   ]
 
-parseOnly' parser t = case parse parser t of
-    Partial i -> i ""
-    x         -> x
+paramTest :: IResult Text (Set Param)
+paramTest =
+    parseOnly' parserParams $ Text.unlines ["parameters {", "parameters {", "}"]
+
+tests :: IO ()
+tests = mapM_
+    (\(sig, code) -> do
+        let Just (args, Just f) = fromJust $ parseSigLine (FullSigName sig) code
+        putStrLn $ "----------"
+        putStrLn $ "code \"" ++ Text.unpack code ++ "\""
+        putStrLn $ "sig \"" ++ Text.unpack sig ++ "\""
+        putStrLn $ "found args \"" ++ show args ++ "\""
+        putStrLn $ "found replace \"" ++ show (f (Expr "TEST")) ++ "\""
+    )
+    [ ("Test"       , "int x = Test()")
+    , ("Test"       , "int x = Test(1, x, 5)")
+    , ("Test"       , "int x = Test((1 + x), (m + (1 + x))) + 1")
+    , ("IRT_LogOdds", "inv_logit(IRT_LogOdds(i, j))")
+    , ( "IRT_LogOdds"
+      , Text.unlines
+          ["", "\n\n y[i, j] ~ bernoulli(inv_logit(IRT_LogOdds(i, j)));\n"]
+      )
+    ]
 
 codeTest = parseOnly' (parserCode 1) $ Text.unlines ["  testa;", "  testb;"]
 
@@ -642,10 +648,10 @@ partTest2 = parseOnly' parserTop $ Text.unlines
 
 codeBraced = parseOnly' parserBraced $ Text.unlines
       -- codeTest5 = parseOnly' (parserTilClosed' 1) $ Text.unlines
-    [ "    peep;"
+    [ "    x;"
     , "for (i in 1:I) {"
     , "  for (j in 1:J) {"
-    , "    poop;"
+    , "    x;"
     , "  }"
     , "}"
     , ""
@@ -659,3 +665,5 @@ codeBraced2 =
 
 findTest = findModules (Set.fromList [(SigName "IRT_LogOdds", Nothing)])
                        (Code ["inv_logit(IRT_LogOdds(i, j))"] Nothing)
+
+-}

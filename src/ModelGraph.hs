@@ -7,7 +7,6 @@ module ModelGraph (
   , arbitrarySelection
   , modelNeighbors
   , decoratedModelGraph
-  , treeModelGraph
   , modelGraphviz
   ) where
 
@@ -19,24 +18,11 @@ import           Data.Set                 (Set)
 import qualified Data.Set                 as Set
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
+import Data.Fix
 
 import           Graphviz
 import           Types
 import           ModuleTree
-
-modelGraph :: ModularProgram -> Graph Selection
-modelGraph = treeModelGraph . moduleTree
-
-treeModelGraph :: ModuleTree -> Graph Selection
-treeModelGraph (SigTree impls) = foldl1' connect $ map treeModelGraph impls
-treeModelGraph (ImplTree name []) = Vertex (idToSel name)
-treeModelGraph (ImplTree name sigs) =
-  fmap (idToSel name <>) . foldl1' box' $ map treeModelGraph sigs
-  where box' g1 g2 = (\(a, b) -> a <> b) <$> box g1 g2
-
-idToSel :: ImplID -> Selection
-idToSel (Nothing, _)     = Map.empty
-idToSel (Just sig, impl) = Map.singleton sig impl
 
 allSelections :: ModularProgram -> Set Selection
 allSelections = vertexSet . modelGraph
@@ -46,6 +32,23 @@ arbitrarySelection = Set.findMin . allSelections
 
 modelNeighbors :: ModularProgram -> Selection -> Set Selection
 modelNeighbors p s = neighbours s . toUndirected $ modelGraph p
+
+-- Build a node's graph given its subtrees' graphs; for use in `hylo` or `cata`
+joinGraphs :: ModuleTree (Graph Selection) -> Graph Selection
+joinGraphs (SigTree _ implGraphs) = foldl1' graphJoin implGraphs
+  -- Signature nodes combine children with graph join:
+  --   https://en.wikipedia.org/wiki/Graph_operations
+  where graphJoin = connect
+joinGraphs (ImplTree impl []) = Vertex impl
+joinGraphs (ImplTree impl sigGraphs) = (impl <>) <$> foldl1' cartesianMAppend sigGraphs
+  -- Implementation nodes combine children with graph Cartesian product:
+  --   https://en.wikipedia.org/wiki/Cartesian_product_of_graphs
+  where cartesianMAppend g1 g2 = (\(a, b) -> a <> b) <$> box g1 g2
+
+-- Grow a module tree from Root with `growTree`, fold into a graph with `joinGraphs` (Hylomorphism)
+modelGraph :: ModularProgram -> Graph Selection
+modelGraph p = hylo joinGraphs (growTree p) (Impl Root)
+
 
 ------
 -- Visualizations
@@ -76,7 +79,6 @@ decoratedModelGraph p = ModelGraph allModels modelEdges
       ds -> error $ "Internal issue: neighboring selections differ by !=1 key. " ++ show ds
 
 showSel :: Selection -> Text
-showSel =
-    Text.unlines
-        . map (\(SigName sig, ImplName impl) -> sig <> ": " <> impl)
-        . Map.toList
+showSel = Text.unlines
+          . map (\(SigName sig, ImplName impl) -> sig <> ": " <> impl)
+          . Map.toList

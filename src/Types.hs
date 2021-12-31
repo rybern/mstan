@@ -62,7 +62,17 @@ newtype FieldName = FieldName { unFieldName :: Symbol } deriving (Eq, Ord, Show)
 newtype FullSigName = FullSigName { unFullSigName :: Symbol } deriving (Eq, Ord, Show)
 
 newtype ImplName = ImplName { unImplName :: Symbol } deriving (Eq, Ord, Show)
-type ImplID = (Maybe SigName, ImplName)
+
+-- Since implementations can have the same name (e.g. "yes" and "no"), we need their parent signature to identify them globally
+-- If the impl is root, it has no parent or name
+data ImplID
+  = ImplID { parent :: SigName, name :: ImplName }
+  | Root
+  deriving (Show, Eq, Ord)
+
+implNameText :: ImplID -> Maybe Text
+implNameText (ImplID _ (ImplName name)) = Just name
+implNameText Root = Nothing
 
 -- Program types
 
