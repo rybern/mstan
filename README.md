@@ -9,16 +9,7 @@
  1. Install [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
  2. Make sure [Graphviz](https://graphviz.org/) is installed.
  3. Run `stack install`. This should build `mstan` and `mstan-server` and copy them to your PATH.
- 4. To use `model_search.py` with ELPD evaluation, you'll need `Rscript`, `python`, `cmdstan`, and the following R dependencies: 
-    * tidyverse
-    * loo
-    * abind
-    * distributional
-    * tensorA
-    * jsonlite
-    * data_table
-    * cmdstanr
-    * posterior
+ 4. To use `model_search.py` with ELPD evaluation, you'll need `Rscript`, `python`, `cmdstan`, and the following R dependencies: tidyverse, loo, abind, distributional, tensorA, jsonlite, data_table, cmdstanr, posterior.
 
     You can use [`nix`](https://nixos.org/download.html) to manage these dependencies with the `nix-shell` command. `nix-shell` will default to the appropriate environment specified by the `default.nix` file. You may still need to install `cmdstan` separately from `nix`.
  
