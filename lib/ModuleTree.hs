@@ -16,8 +16,6 @@ import           Data.List                ( groupBy, sortOn )
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
 import           Data.Maybe
--- import           Data.Set.Ordered                 (OSet)
--- import qualified Data.Set.Ordered                 as OSet
 import           Data.Set                 (Set)
 import qualified Data.Set                 as Set
 import           Data.Text                (Text)
