@@ -34,7 +34,9 @@ library
                        process,
                        graphviz,
                        algebraic-graphs,
-                       data-fix >= 0.3.0
+                       data-fix >= 0.3.0,
+                       uglymemo
+
 
 executable mstan
   hs-source-dirs:      mstan

@@ -19,6 +19,7 @@ import qualified Data.Set                 as Set
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
 import           Data.Fix                 (refold)
+import           Data.MemoUgly
 
 import           Graphviz
 import           Types
@@ -38,8 +39,9 @@ joinGraphs (ImplBranch impl sigGraphs) = (impl <>) <$> foldl1' cartesianProduct 
   where cartesianProduct g1 g2 = uncurry (<>) <$> box g1 g2
 
 -- Grow a module tree from Root with `growTree`, fold into a graph with `joinGraphs` (hylomorphism)
+-- Use memoization because modules may not actually form a tree, so sub"trees" may be repeated
 modelGraph :: ModularProgram -> Graph Selection
-modelGraph p = refold joinGraphs (growTree p) (Impl Root)
+modelGraph p = refold (memo joinGraphs) (growTree p) (Impl Root)
 
 allSelections :: ModularProgram -> Set Selection
 allSelections = vertexSet . modelGraph
