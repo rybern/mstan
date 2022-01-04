@@ -56,7 +56,7 @@ implSigs p = Map.insert Root (moduleSigs (topProgram p))
 
 -- Pattern functor for module tree
 data ModuleBranch f = SigBranch SigName [f] | ImplBranch Selection [f]
-  deriving Functor
+  deriving (Eq, Ord, Functor)
 
 data Node = Impl ImplID | Sig SigName
 

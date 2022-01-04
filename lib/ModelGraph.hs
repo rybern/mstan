@@ -21,6 +21,7 @@ import           Data.Text                (Text)
 import qualified Data.Text                as Text
 import           Data.Fix                 (refold)
 import           Data.Fix                 (foldFix, Fix(..))
+import           Data.MemoUgly
 
 import           Graphviz
 import           Types
@@ -40,8 +41,9 @@ joinGraphs (ImplBranch impl sigGraphs) = (impl <>) <$> foldl1' cartesianProduct 
   where cartesianProduct g1 g2 = uncurry (<>) <$> box g1 g2
 
 -- Grow a module tree from Root with `growTree`, fold into a graph with `joinGraphs` (hylomorphism)
+-- Use memoization because modules may not actually form a tree, so sub"trees" may be repeated
 modelGraph :: ModularProgram -> Graph Selection
-modelGraph p = refold joinGraphs (growTree p) (Impl Root)
+modelGraph p = refold (memo joinGraphs) (growTree p) (Impl Root)
 
 allSelections :: ModularProgram -> Set Selection
 allSelections = vertexSet . modelGraph
@@ -55,32 +57,30 @@ firstSelection p = refold joinFirstSelection (growTree p) (Impl Root)
   where joinFirstSelection (SigBranch _ implSels) = head implSels
         joinFirstSelection (ImplBranch sel sigSels) = sel <> mconcat sigSels
 
-data NState =
-    Virgins (Set Selection)
-  | Found (Set Selection) Selection
-  deriving Show
+data FoundNeighbors =
+    -- Subpaths below this node that share no signatures with the model
+    NoSharedSig (Set Selection)
+  | Found {
+      -- Neighbors of subpath
+      subneighbors :: Set Selection
+      -- Subpath of the model below this node
+    , subpath :: Selection
+    }
+  deriving (Eq, Ord, Show)
 
--- instance Semigroup NState where
---   (<>) (Virgins s1) (Virgins s2) = Virgins (s1 <> s2)
---   (<>) (Found f1 p1) (Found f2 p2) = Found (f1 <> f2) (max p1 p2)
---   (<>) (Virgins s) (Found _ p) = Virgins (Set.map (p <>) s)
---   (<>) (Found _ p) (Virgins s) = Virgins (Set.map (p <>) s)
--- instance Monoid NState where
---   mempty = Found Set.empty Map.empty
-
-joinAtSig :: NState -> NState -> NState
-joinAtSig (Virgins s1) (Virgins s2) = Virgins (s1 <> s2)
+joinAtSig :: FoundNeighbors -> FoundNeighbors -> FoundNeighbors
+joinAtSig (NoSharedSig s1) (NoSharedSig s2) = NoSharedSig (s1 <> s2)
 joinAtSig (Found f1 p1) (Found f2 p2) = Found (f1 <> f2) (max p1 p2)
 joinAtSig a b = error $ "Mixed types at sig " ++ show a ++ ", " ++ show b
 
-joinAtImpl :: NState -> NState -> NState
-joinAtImpl (Virgins s1) (Virgins s2) = Virgins $ Set.fromList
+joinAtImpl :: FoundNeighbors -> FoundNeighbors -> FoundNeighbors
+joinAtImpl (NoSharedSig s1) (NoSharedSig s2) = NoSharedSig $ Set.fromList
   [sel1 <> sel2 | sel1 <- Set.toList s1, sel2 <- Set.toList s2]
 joinAtImpl (Found f1 p1) (Found f2 p2) = Found (f1 <> f2) (max p1 p2)
-joinAtImpl (Virgins s) (Found _ p) = Virgins (Set.map (p <>) s)
-joinAtImpl (Found _ p) (Virgins s) = Virgins (Set.map (p <>) s)
+joinAtImpl (NoSharedSig s) (Found _ p) = NoSharedSig (Set.map (p <>) s)
+joinAtImpl (Found _ p) (NoSharedSig s) = NoSharedSig (Set.map (p <>) s)
 
-joinNeighbors :: Selection -> ModuleBranch NState -> NState
+joinNeighbors :: Selection -> ModuleBranch FoundNeighbors -> FoundNeighbors
 joinNeighbors _ (SigBranch _ implStates) = if null implStates then (Found Set.empty Map.empty) else foldl1 joinAtSig  implStates
 joinNeighbors path (ImplBranch sel sigStates) =
   let concatStates = foldl joinAtImpl (Found Set.empty Map.empty) sigStates
@@ -92,15 +92,15 @@ joinNeighbors path (ImplBranch sel sigStates) =
     else
       if Map.null inter then
         -- This is a virgin impl, collect
-        let (Virgins s) = Virgins (Set.singleton Map.empty) `joinAtImpl` concatStates in
-          Virgins (Set.map (sel <>) s)
+        let (NoSharedSig s) = NoSharedSig (Set.singleton Map.empty) `joinAtImpl` concatStates in
+          NoSharedSig (Set.map (sel <>) s)
       else
         -- Diff root
         case concatStates of
-          Virgins s -> Found (Set.map (sel <>) s) Map.empty
+          NoSharedSig s -> Found (Set.map (sel <>) s) Map.empty
           Found _ subpath -> Found (Set.singleton (sel <> subpath)) subpath
 
-test3 = neighbors' tree path
+test3 = showSigs $ neighbors' tree path
   where tree =
           impl [] [
           sig 2 [
@@ -109,7 +109,7 @@ test3 = neighbors' tree path
           ]
         path = sel [(2, "C")]
 
-test2 = neighbors' tree path
+test2 = showSigs $ neighbors' tree path
   where tree =
           impl [] [
           sig 2 [
@@ -161,7 +161,7 @@ test1Tree =
 
 test1Path = sel [(2, "C"), (1, "B"), (4, "F")]
 
-test1 = neighbors' test1Tree test1Path
+test1 = showSigs $ neighbors' test1Tree test1Path
 
 
 -- An issue with the fix approach: module tree is not strictly recursive. You could write a small module graph that produces a very inefficient "tree"
@@ -169,12 +169,12 @@ test1 = neighbors' test1Tree test1Path
 -- Grow a module tree from Root with `growTree`, fold into a graph with `joinGraphs` (hylomorphism)
 neighbors' :: Fix ModuleBranch -> Selection -> Set Selection
 neighbors' tree path =
-  let (Found neighbors _) = foldFix (joinNeighbors path) tree in neighbors
+  let (Found neighbors _) = foldFix (memo (joinNeighbors path)) tree in neighbors
 
 -- Grow a module tree from Root with `growTree`, fold into a graph with `joinGraphs` (hylomorphism)
 neighbors :: ModularProgram -> Selection -> Set Selection
 neighbors p path =
-  let (Found neighbors _) = refold (joinNeighbors path) (growTree p) (Impl Root) in neighbors
+  let (Found neighbors _) = refold (memo (joinNeighbors path)) (growTree p) (Impl Root) in neighbors
 
 ------
 -- Visualizations
