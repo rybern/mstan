@@ -20,9 +20,7 @@ import qualified Data.Set                 as Set
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
 import           Data.Fix                 (refold)
-import           Data.Fix                 (foldFix, Fix(..))
 import           Data.MemoUgly
-
 
 import           Graphviz
 import           Types
@@ -34,10 +32,10 @@ import           ModuleTree
 
 type SelectionGraph = (Set Selection, Set (Selection, Selection, ModuleDelta))
 
-selectionDelta :: (Selection, Selection) -> Maybe (Selection, Selection, ModuleDelta)
-selectionDelta (a, b) =
+selectionDelta :: Selection -> Selection -> Maybe ModuleDelta
+selectionDelta a b =
   (\case
-    [delta] -> Just (a, b, delta)
+    [delta] -> Just delta
     _ -> Nothing)
   . filter (\(ModuleDelta _ i1 i2) -> i1 /= i2)
   . Map.elems
@@ -52,9 +50,10 @@ joinGraphs :: ModuleBranch SelectionGraph -> SelectionGraph
 joinGraphs (SigBranch _ implGraphs) = foldl' join (Set.empty, Set.empty) implGraphs
   -- Signature nodes combine children by graph join:
   --   https://en.wikipedia.org/wiki/Graph_operations
-  where join (n1, e1) (n2, e2) =
+  where selectionDelta' (a, b) = (a, b,) <$> selectionDelta a b
+        join (n1, e1) (n2, e2) =
           (n1 <> n2,
-           e1 <> e2 <> setMapMaybe selectionDelta (Set.cartesianProduct n1 n2))
+           e1 <> e2 <> setMapMaybe selectionDelta' (Set.cartesianProduct n1 n2))
 joinGraphs (ImplBranch impl sigGraphs) = foldl' product (Set.singleton impl, Set.empty) sigGraphs
   -- Implementation nodes combine children by Cartesian graph product:
   --   https://en.wikipedia.org/wiki/Cartesian_product_of_graphs
@@ -72,15 +71,17 @@ modelGraph p = refold (memo joinGraphs) (growTree p) (Impl Root)
 allSelections :: ModularProgram -> Set Selection
 allSelections = fst . modelGraph
 
-modelNeighbors :: ModularProgram -> Selection -> Set Selection
-modelNeighbors p s = undefined
-
--- Faster than `Set.head . allSelections`
 firstSelection :: ModularProgram -> Selection
 firstSelection p = refold joinFirstSelection (growTree p) (Impl Root)
   where joinFirstSelection (SigBranch _ implSels) = head implSels
         joinFirstSelection (ImplBranch sel sigSels) = sel <> mconcat sigSels
 
+------
+-- Efficient neighbors
+------
+
+-- When on the path, track the subpath like a node and neighbors like edges
+-- When off the path, track nodes like normal except ignoring branches on path
 data FoundNeighbors =
     -- Subpaths below this node that share no signatures with the model
     NoSharedSig (Set Selection)
@@ -92,17 +93,20 @@ data FoundNeighbors =
     }
   deriving (Eq, Ord, Show)
 
+-- Analogous to graph join with one node
 joinAtSig :: FoundNeighbors -> FoundNeighbors -> FoundNeighbors
 joinAtSig (NoSharedSig s1) (NoSharedSig s2) = NoSharedSig (s1 <> s2)
 joinAtSig (Found f1 p1) (Found f2 p2) = Found (f1 <> f2) (max p1 p2)
 joinAtSig a b = error $ "Mixed types at sig " ++ show a ++ ", " ++ show b
 
+-- Analogous to graph cartesian product with one node
 joinAtImpl :: FoundNeighbors -> FoundNeighbors -> FoundNeighbors
-joinAtImpl (NoSharedSig s1) (NoSharedSig s2) = NoSharedSig $ Set.fromList
-  [sel1 <> sel2 | sel1 <- Set.toList s1, sel2 <- Set.toList s2]
-joinAtImpl (Found f1 p1) (Found f2 p2) = Found (f1 <> f2) (max p1 p2)
-joinAtImpl (NoSharedSig s) (Found _ p) = NoSharedSig (Set.map (p <>) s)
-joinAtImpl (Found _ p) (NoSharedSig s) = NoSharedSig (Set.map (p <>) s)
+joinAtImpl (NoSharedSig s1) (NoSharedSig s2) =
+  NoSharedSig . Set.map (uncurry (<>)) $ Set.cartesianProduct s1 s2
+joinAtImpl (Found f1 p1) (Found f2 p2) =
+  Found (Set.map (<> p2) f1 <> Set.map (<> p1) f2) (p1 <> p2)
+joinAtImpl (NoSharedSig s) (Found _ p) = NoSharedSig (Set.map (<> p) s)
+joinAtImpl (Found _ p) (NoSharedSig s) = NoSharedSig (Set.map (<> p) s)
 
 joinNeighbors :: Selection -> ModuleBranch FoundNeighbors -> FoundNeighbors
 joinNeighbors _ (SigBranch _ implStates) = if null implStates then (Found Set.empty Map.empty) else foldl1 joinAtSig  implStates
@@ -115,7 +119,7 @@ joinNeighbors path (ImplBranch sel sigStates) =
         Found (Set.map (sel <>) diffs) (sel <> subpath)
     else
       if Map.null inter then
-        -- This is a virgin impl, collect
+        -- This is a non-neighboring impl, collect
         let (NoSharedSig s) = NoSharedSig (Set.singleton Map.empty) `joinAtImpl` concatStates in
           NoSharedSig (Set.map (sel <>) s)
       else
@@ -124,81 +128,14 @@ joinNeighbors path (ImplBranch sel sigStates) =
           NoSharedSig s -> Found (Set.map (sel <>) s) Map.empty
           Found _ subpath -> Found (Set.singleton (sel <> subpath)) subpath
 
-test3 = showSigs $ neighbors' tree path
-  where tree =
-          impl [] [
-          sig 2 [
-              impl [(2, "C")] []
-              ]
-          ]
-        path = sel [(2, "C")]
-
-test2 = showSigs $ neighbors' tree path
-  where tree =
-          impl [] [
-          sig 2 [
-              impl [(2, "C")] [],
-              impl [(2, "D")] []
-              ]
-          ]
-        path = sel [(2, "C")]
-
-sel = Map.fromList . map (\(s, i) -> (SigName (Text.pack $ show s), ImplName i))
-impl selection branches = Fix (ImplBranch (sel selection) branches)
-sig s branches = Fix (SigBranch (SigName (Text.pack $ show s)) branches)
-showSigs :: Set Selection -> IO ()
-showSigs = mapM_ (print . showSelection)
-
-test1Tree =
-  impl [] [
-    sig 2 [
-        impl [(2, "C")] [
-            sig 1 [
-                impl [(1, "B")] [
-                    sig 4 [
-                        impl [(4, "F")] []
-                        ]
-                    ],
-                impl [(1, "A")] [
-                    sig 3 [
-                        impl [(3, "E")] []
-                        ]
-                    ]
-                ]
-              ],
-          impl [(2, "D")] [
-            sig 1 [
-                impl [(1, "B")] [
-                    sig 4 [
-                        impl [(4, "F")] []
-                        ]
-                    ],
-                impl [(1, "A")] [
-                    sig 3 [
-                        impl [(3, "E")] []
-                        ]
-                    ]
-                ]
-              ]
-          ]
-      ]
-
-test1Path = sel [(2, "C"), (1, "B"), (4, "F")]
-
-test1 = showSigs $ neighbors' test1Tree test1Path
-
-
--- An issue with the fix approach: module tree is not strictly recursive. You could write a small module graph that produces a very inefficient "tree"
-
--- Grow a module tree from Root with `growTree`, fold into a graph with `joinGraphs` (hylomorphism)
-neighbors' :: Fix ModuleBranch -> Selection -> Set Selection
-neighbors' tree path =
-  let (Found neighbors _) = foldFix (memo (joinNeighbors path)) tree in neighbors
-
--- Grow a module tree from Root with `growTree`, fold into a graph with `joinGraphs` (hylomorphism)
-neighbors :: ModularProgram -> Selection -> Set Selection
-neighbors p path =
+modelNeighbors :: ModularProgram -> Selection -> Set Selection
+modelNeighbors p path =
   let (Found neighbors _) = refold (memo (joinNeighbors path)) (growTree p) (Impl Root) in neighbors
+
+modelNeighbors' :: ModularProgram -> Selection -> Set Selection
+modelNeighbors' p path = Set.filter (isJust . selectionDelta path) . fst $ modelGraph p
+
+
 
 ------
 -- Visualizations
@@ -220,3 +157,7 @@ showSel :: Selection -> Text
 showSel = Text.unlines
           . map (\(SigName sig, ImplName impl) -> sig <> ": " <> impl)
           . Map.toList
+
+{-
+
+-}
