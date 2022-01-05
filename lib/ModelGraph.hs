@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TupleSections     #-}
 module ModelGraph (
@@ -19,6 +20,7 @@ import qualified Data.Set                 as Set
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
 import           Data.Fix                 (refold)
+import           Data.Fix                 (foldFix, Fix(..))
 import           Data.MemoUgly
 
 
@@ -78,6 +80,125 @@ firstSelection :: ModularProgram -> Selection
 firstSelection p = refold joinFirstSelection (growTree p) (Impl Root)
   where joinFirstSelection (SigBranch _ implSels) = head implSels
         joinFirstSelection (ImplBranch sel sigSels) = sel <> mconcat sigSels
+
+data FoundNeighbors =
+    -- Subpaths below this node that share no signatures with the model
+    NoSharedSig (Set Selection)
+  | Found {
+      -- Neighbors of subpath
+      subneighbors :: Set Selection
+      -- Subpath of the model below this node
+    , subpath :: Selection
+    }
+  deriving (Eq, Ord, Show)
+
+joinAtSig :: FoundNeighbors -> FoundNeighbors -> FoundNeighbors
+joinAtSig (NoSharedSig s1) (NoSharedSig s2) = NoSharedSig (s1 <> s2)
+joinAtSig (Found f1 p1) (Found f2 p2) = Found (f1 <> f2) (max p1 p2)
+joinAtSig a b = error $ "Mixed types at sig " ++ show a ++ ", " ++ show b
+
+joinAtImpl :: FoundNeighbors -> FoundNeighbors -> FoundNeighbors
+joinAtImpl (NoSharedSig s1) (NoSharedSig s2) = NoSharedSig $ Set.fromList
+  [sel1 <> sel2 | sel1 <- Set.toList s1, sel2 <- Set.toList s2]
+joinAtImpl (Found f1 p1) (Found f2 p2) = Found (f1 <> f2) (max p1 p2)
+joinAtImpl (NoSharedSig s) (Found _ p) = NoSharedSig (Set.map (p <>) s)
+joinAtImpl (Found _ p) (NoSharedSig s) = NoSharedSig (Set.map (p <>) s)
+
+joinNeighbors :: Selection -> ModuleBranch FoundNeighbors -> FoundNeighbors
+joinNeighbors _ (SigBranch _ implStates) = if null implStates then (Found Set.empty Map.empty) else foldl1 joinAtSig  implStates
+joinNeighbors path (ImplBranch sel sigStates) =
+  let concatStates = foldl joinAtImpl (Found Set.empty Map.empty) sigStates
+      inter = Map.intersectionWith (\a _ -> a) path sel in
+    if Map.null sel || inter == sel then
+      -- On path
+      let (Found diffs subpath) = concatStates in
+        Found (Set.map (sel <>) diffs) (sel <> subpath)
+    else
+      if Map.null inter then
+        -- This is a virgin impl, collect
+        let (NoSharedSig s) = NoSharedSig (Set.singleton Map.empty) `joinAtImpl` concatStates in
+          NoSharedSig (Set.map (sel <>) s)
+      else
+        -- Diff root
+        case concatStates of
+          NoSharedSig s -> Found (Set.map (sel <>) s) Map.empty
+          Found _ subpath -> Found (Set.singleton (sel <> subpath)) subpath
+
+test3 = showSigs $ neighbors' tree path
+  where tree =
+          impl [] [
+          sig 2 [
+              impl [(2, "C")] []
+              ]
+          ]
+        path = sel [(2, "C")]
+
+test2 = showSigs $ neighbors' tree path
+  where tree =
+          impl [] [
+          sig 2 [
+              impl [(2, "C")] [],
+              impl [(2, "D")] []
+              ]
+          ]
+        path = sel [(2, "C")]
+
+sel = Map.fromList . map (\(s, i) -> (SigName (Text.pack $ show s), ImplName i))
+impl selection branches = Fix (ImplBranch (sel selection) branches)
+sig s branches = Fix (SigBranch (SigName (Text.pack $ show s)) branches)
+showSigs :: Set Selection -> IO ()
+showSigs = mapM_ (print . showSelection)
+
+test1Tree =
+  impl [] [
+    sig 2 [
+        impl [(2, "C")] [
+            sig 1 [
+                impl [(1, "B")] [
+                    sig 4 [
+                        impl [(4, "F")] []
+                        ]
+                    ],
+                impl [(1, "A")] [
+                    sig 3 [
+                        impl [(3, "E")] []
+                        ]
+                    ]
+                ]
+              ],
+          impl [(2, "D")] [
+            sig 1 [
+                impl [(1, "B")] [
+                    sig 4 [
+                        impl [(4, "F")] []
+                        ]
+                    ],
+                impl [(1, "A")] [
+                    sig 3 [
+                        impl [(3, "E")] []
+                        ]
+                    ]
+                ]
+              ]
+          ]
+      ]
+
+test1Path = sel [(2, "C"), (1, "B"), (4, "F")]
+
+test1 = showSigs $ neighbors' test1Tree test1Path
+
+
+-- An issue with the fix approach: module tree is not strictly recursive. You could write a small module graph that produces a very inefficient "tree"
+
+-- Grow a module tree from Root with `growTree`, fold into a graph with `joinGraphs` (hylomorphism)
+neighbors' :: Fix ModuleBranch -> Selection -> Set Selection
+neighbors' tree path =
+  let (Found neighbors _) = foldFix (memo (joinNeighbors path)) tree in neighbors
+
+-- Grow a module tree from Root with `growTree`, fold into a graph with `joinGraphs` (hylomorphism)
+neighbors :: ModularProgram -> Selection -> Set Selection
+neighbors p path =
+  let (Found neighbors _) = refold (memo (joinNeighbors path)) (growTree p) (Impl Root) in neighbors
 
 ------
 -- Visualizations
