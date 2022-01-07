@@ -4,7 +4,7 @@ import os.path
 import json
 from queue import PriorityQueue
 
-# DEBUG_IO = True
+## DEBUG_IO = True
 DEBUG_IO = False
 
 def text_command(args):
