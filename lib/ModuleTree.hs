@@ -93,7 +93,7 @@ hierTraverseNode (Impl impl) impl2SigMap sig2ImplMap = do
       Just signames -> if length signames == 1
                   then do
                     -- If there's only 1 signature underneath the implementation, nothing more needs to be done
-                    map (\x -> Data.Text.intercalate "," ((getFullImplString impl) : (hierTraverseNode (Sig x) impl2SigMap sig2ImplMap))) (signames)
+                    map (\x -> Data.Text.intercalate "," [getFullImplString impl, x]) (hierTraverseNode (Sig $ head signames) impl2SigMap sig2ImplMap)
                   else 
                     (
                       if length signames == 2
