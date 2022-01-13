@@ -5,6 +5,8 @@
 module ModuleTree (
     growTree
   , printModularTree
+  , implSigs
+  , findHighestModels
   , moduleTreeGraphviz
   , ModuleBranch (..)
   , Node (..)
@@ -18,10 +20,10 @@ import qualified Data.Map                 as Map
 import           Data.Maybe
 import           Data.Set                 (Set)
 import qualified Data.Set                 as Set
-import           Data.Text                (Text)
+import           Data.Text                (Text, intercalate)
 import qualified Data.Text.IO             as Text
 import           Data.Fix                 (refold)
-
+import           Control.Applicative      (liftA2)
 import           Graphviz
 import           Types
 import           Indent
@@ -54,6 +56,7 @@ implSigs p = Map.insert Root (moduleSigs (topProgram p))
     orderSigs :: Set SigName -> [SigName]
     orderSigs set = filter (`Set.member` set) . map snd $ signatures p
 
+
 -- Pattern functor for module tree
 data ModuleBranch f = SigBranch SigName [f] | ImplBranch Selection [f]
   deriving (Eq, Ord, Functor)
@@ -73,6 +76,66 @@ growTree' _ sToI (Sig sig) =
 idToSel :: ImplID -> Selection
 idToSel Root              = Map.empty
 idToSel (ImplID sig impl) = Map.singleton sig impl
+
+
+
+getFullImplString :: ImplID -> Text
+getFullImplString (ImplID parent name) = (unSigName parent) <> ":" <> (unImplName name)
+getFullImplString Root = ""
+
+-- for implementations: 
+--  if terminal: return self
+--  else: return merge(self, union(left_signature, right_signature))
+hierTraverseNode :: Node -> Map ImplID [SigName] -> Map SigName [ImplName] -> [Text]
+hierTraverseNode (Impl impl) impl2SigMap sig2ImplMap = do
+    let signames = Map.lookup impl impl2SigMap
+    case signames of
+      Just signames -> if length signames == 1
+                  then do
+                    -- If there's only 1 signature underneath the implementation, nothing more needs to be done
+                    map (\x -> Data.Text.intercalate "," ((getFullImplString impl) : (hierTraverseNode (Sig x) impl2SigMap sig2ImplMap))) (signames)
+                  else 
+                    (
+                      if length signames == 2
+                        then do
+                          -- If there's 2 signatures underneath the implementation, you need to do an equivalent of a  graph join
+                          -- Where you take the combinations of each signature's top nodes
+                          let first_sig = (hierTraverseNode (Sig $ head signames) impl2SigMap sig2ImplMap); second_sig = (hierTraverseNode (Sig $ last signames) impl2SigMap sig2ImplMap) in 
+                             map (\(x, y) -> Data.Text.intercalate "," [getFullImplString impl, x, y]) (liftA2 (,) first_sig second_sig)
+                        else [getFullImplString impl]
+                    )
+      Nothing -> [getFullImplString impl]
+
+-- for signatures: find implementations that don't have the value 'no'
+hierTraverseNode (Sig sig) impl2SigMap sig2ImplMap = do
+  let impls = Map.lookup sig sig2ImplMap
+  case impls of
+    Just impls -> concat $ map (\x -> if (unImplName x) /= "no" then hierTraverseNode (Impl ImplID {parent=sig, name=x}) impl2SigMap sig2ImplMap else []) impls
+    Nothing -> []
+
+
+
+-- entry point is implementation 'root'. From there, we check if the number of 
+-- signatures are > 1, which is when the actual signature substrees start
+hierTraverseInit :: Node -> Map ImplID [SigName] -> Map SigName [ImplName] -> [Text]
+hierTraverseInit (Impl x) implToSigMap sigToImplMap = do
+  let signames = Map.lookup x implToSigMap
+  case signames of
+    Just signames -> if length signames >= 2
+      then do 
+        concat (map (\m -> hierTraverseNode (Sig m) implToSigMap sigToImplMap) signames)
+      else hierTraverseInit (Sig $ head $ signames) implToSigMap sigToImplMap
+    Nothing -> []
+
+-- signatures cannot branch off into more than 1
+hierTraverseInit (Sig x) implToSigMap sigToImplMap = do
+  let implnames = Map.lookup x sigToImplMap
+  case implnames of 
+    Just implnames -> hierTraverseInit (Impl ImplID {parent=x, name=head implnames}) implToSigMap sigToImplMap
+    Nothing -> []
+
+findHighestModels :: ModularProgram -> [Text]
+findHighestModels m = hierTraverseInit (Impl Root) (implSigs m) (sigImpls m)
 
 ------
 -- Visualizations

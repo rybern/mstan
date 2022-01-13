@@ -26,6 +26,8 @@ data ExecCommand =
   | GetModelGraph
   | GetModuleGraph
   | GetAllModels
+  | GetHighestModels
+  | GetImplMap
   deriving Show
 
 parseOptions :: IO RunOptions
@@ -94,4 +96,14 @@ parserExecCommand = hsubparser
            (info (pure GetAllModels)
                  (progDesc "Return all model IDs")
            )
+    <> OptParse.command
+            "impl-map"
+            (info (pure GetImplMap)
+                  (progDesc "Print implementation -> signature map")
+            )
+    <> OptParse.command
+            "get-highest-models"
+            (info (pure GetHighestModels)
+                    (progDesc "Return models of highest hierarchy by complexity, per subtree")
+            )
     )
