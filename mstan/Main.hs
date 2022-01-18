@@ -55,8 +55,11 @@ execCommand prog GetImplMap = do
   return (map (\(impl, sigs) -> Text.intercalate "|" ((stringfyImplID impl) : map unSigName sigs)) (Map.toList (implSigs prog)))
 
 execCommand prog GetHighestModels = do
-  let highestModels = findHighestModels prog
-  return highestModels
+  -- let highestModels = findHighestModels prog
+  -- return highestModels
+  let filteredProg = prog { implementations = filter ((/= ImplName "no") . implName) (implementations prog) }
+  let sels = allSelections filteredProg
+  return . map showSelection . Set.toList $ sels
 
 execCommand prog GetMinimumSelection = return $
   [showSelection $ firstSelection prog]
