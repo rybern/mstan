@@ -44,3 +44,20 @@ for model in stdout:
     results[model] = result
 
 print(results)
+
+
+
+
+hierarchy_info = [
+    ["DayofWeekTrend:Yes,DayofWeekWeights:weighted", "DayofWeekTrend:Yes,DayofWeekWeights:uniform", "DayofWeekTrend:no"],
+    ["DayofYearTrend:yes,DayofHierarchicalVariance:yes,DayofYearNormalVariance:yes","DayofYearTrend:yes,DayofHierarchicalVariance:yes,DayofYearNormalVariance:no","DayofYearTrend:yes,DayofHierarchicalVariance:no,DayofYearNormalVariance:yes", "DayofYearTrend:no"]
+    ["HolidayTrend:Yes", "HolidayTrend:No"],
+    #...
+]  # n, n-1, ... 1
+
+current_model = ["DayofWeek:Yes", "HolidayTrend:Yes"]
+
+chain = []
+chain.append(",".join(current_model))
+current_model[0] = hierarchy_info[0][1]
+chain.append(",".join(current_model))
