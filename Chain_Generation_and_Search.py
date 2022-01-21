@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import subprocess
-
+import sys
 
 # Generate a chain given the Top_level_Signature_Hierarchy information
 # The following function returns a chain of models where for any i, the ith model's model complexity is strictly higher than that of the (i+1)th model
@@ -19,7 +19,7 @@ def Chain_Generation(Top_level_Signature_Hierarchy):
     Cur_indices = [0 for i in range(m)]
     Cur_Indices_sum = sum(Cur_indices)
     # The following list represents the possible increments for the indices
-    Possible_increments_for_indices = [ len(Top_level_Signature_Hierarchy[i]) - Cur_indices[i] for i in range(m)]
+    Possible_increments_for_indices = [ len(Top_level_Signature_Hierarchy[i]) - 1 - Cur_indices[i] for i in range(m)]
     # Candidates for increments (the indices of top-level signatures whose implementations' indices can be increased)
     Candidates_for_increment = []
     for i in range(m):
@@ -29,9 +29,9 @@ def Chain_Generation(Top_level_Signature_Hierarchy):
     Indices_sum_UB =  np.sum([len(implementations)-1 for implementations in Top_level_Signature_Hierarchy])
     # Create the next model for the chain by randomly increasing the index of exactly one implementation of the previous model wherever possible
     # If the Chain contains the model with the lowest possible complexity (in which case the Cur_Indices_sum equals the Indices_sum_UB, terminate the Chain generation algorithm)
-    while Cur_Indices_sum <= Indices_sum_UB:
+    while Cur_Indices_sum < Indices_sum_UB:
         # Get the current iteration's model based on the Current indices & Top-level signature hierarchy
-        cur_iter_model = [Top_level_Signature_Hierarchy[Cur_indices[i]] for i in range(m)]
+        cur_iter_model = [Top_level_Signature_Hierarchy[i][Cur_indices[i]] for i in range(m)]
         Chain.append(cur_iter_model)
         # Randomly increase the index of a particular implementation
         increment_ind = random.choice(Candidates_for_increment)
@@ -71,14 +71,15 @@ class ModelEvaluator:
 # Compute the ELPD value of a model
 # model is a list where its ith element is a string that represents the implementation for the ith top-level signature
 def ELPD(model, data_file):
-    print(model[0])
+    
     # use the elements of 'model' (type: list) to obtain the full 'name' of the model
     # Then use 'STAN' to compute ELPD of the model (based on the 'model name' obtained above)
-    model_code_args = ["mstan", "-f", ",".join(model), "concrete-model", "-s", model,]
+    model_code_args = ["mstan", "-f", "birthday.m.stan", "concrete-model", "-s", ",".join(model) + ",Regression:glm",]
     model_code = text_command(model_code_args)
     with open("temp_stanmodel.stan", "w") as f:
         f.write(model_code)
     result = ModelEvaluator(data_file).score("temp_stanmodel.stan")
+    print(f"model: {','.join(model)} ELPD:{result}")
     return result
 
 
@@ -140,10 +141,6 @@ Top_level_Signature_Hierarchy = [
 ]
 
 chain = Chain_Generation(Top_level_Signature_Hierarchy)
-
-for val in chain:
-    print("*" * 10)
-    print(val)
 
 data_file_dir = "examples/birthday/births_usa_1969.json"
 
