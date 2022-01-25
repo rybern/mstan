@@ -74,7 +74,7 @@ runCommand :: FilePath -> Command -> IO Text
 runCommand _ (SelectCmd selections prog) =
     return . Text.intercalate "\n" . linesConcreteProgram $ selectModules prog selections
 runCommand fileDir (ModelGraphCmd prog) = do
-    let graph = decoratedModelGraph prog
+    let graph = decoratedModelGraph (modelGraph prog)
 
     fileName <-
         (\fileID -> "graphs/temp_model_graph_" <> fileID <> ".json") <$> generateID
@@ -107,7 +107,7 @@ modelGraphAlchemy (ModelGraph nodes edges) = toObj
     commaLines = Text.intercalate "_____" . sort . Text.lines
     quote t = "\"" <> t <> "\""
     clean = Text.replace ":" "___"
-    edgeObj (ModelNode n1, ModelNode n2, ModuleDelta sig i1 i2) = toObj
+    edgeObj (ModelNode n1, ModelNode n2, ModuleDelta (SigName sig) (ImplName i1) (ImplName i2)) = toObj
         [ ("source"  , selToID $ n1)
         , ("target"  , selToID $ n2)
         , ("sig"     , quote $ sig)

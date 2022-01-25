@@ -46,7 +46,7 @@ execCommand prog (GetConcrete selection) = return $
 execCommand prog GetMinimumSelection = return $
   [showSelection $ firstSelection prog]
 execCommand prog GetModelGraph = do
-  let graphviz = modelGraphviz prog
+  let graphviz = modelGraphviz (modelGraph prog)
   let graphName = "model_graph"
   filePath  <- publishGraph graphName graphviz
   return [Text.pack filePath]

@@ -36,9 +36,26 @@ publishGraph fp g = do
 data ModuleGraph = ModuleGraph [ImplID] [SigName] (Map ImplID [SigName]) (Map SigName [ImplName]) deriving (Eq, Ord, Show)
 
 data ModelNode = ModelNode Text deriving (Eq, Ord, Show)
-data ModuleDelta = ModuleDelta Text Text Text deriving (Eq, Ord, Show)
 
 data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, ModuleDelta)] deriving (Eq, Ord, Show)
+
+-- Build a GraphViz representation from the SelectionGraph
+modelGraphviz :: SelectionGraph -> Graphviz
+modelGraphviz g = modelGraphToDot (decoratedModelGraph g)
+
+-- Node- and Edge-set representation of the graph of models for visualization
+decoratedModelGraph :: SelectionGraph -> ModelGraph
+decoratedModelGraph g = ModelGraph allModels modelEdges
+  where
+    (SelectionGraph (NodeSet nodes) edges) = g
+    toNode = ModelNode . showSel
+    allModels = Set.map toNode nodes
+    modelEdges = map (\(a, b, d) -> (toNode a, toNode b, d)) . Set.toList $ edges
+
+showSel :: Selection -> Text
+showSel = Text.unlines
+          . map (\(SigName sig, ImplName impl) -> sig <> ": " <> impl)
+          . Map.toList
 
 implID :: ImplID -> Text
 implID (ImplID (SigName s) (ImplName i)) = s <> ":" <> i

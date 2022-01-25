@@ -132,3 +132,13 @@ data ModuleImplementation code = ModuleImplementation
     implBlocks :: Blocks code
   }
   deriving (Eq, Ord, Show, Functor, Foldable)
+
+data ModuleDelta = ModuleDelta SigName ImplName ImplName deriving (Eq, Ord, Show)
+
+newtype NodeSet = NodeSet { unNodeSet :: Set Selection }
+  deriving (Show, Eq, Ord)
+
+data SelectionGraph = SelectionGraph {
+    nodes :: NodeSet
+  , edges :: Set (Selection, Selection, ModuleDelta)
+  } deriving (Show, Eq, Ord)
