@@ -4,8 +4,8 @@ import os.path
 import json
 from queue import PriorityQueue
 
-# DEBUG_IO = True
-DEBUG_IO = False
+DEBUG_IO = True
+# DEBUG_IO = False
 
 def text_command(args):
     """Run a shell command, return its stdout as a String or throw an exception if it fails."""
