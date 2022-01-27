@@ -1,4 +1,5 @@
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 module ModelGraph (
     modelGraph
@@ -21,14 +22,14 @@ import           ModuleTree
 -- These are the operations we need to define on a graph-like object to build it by recursively consuming the module graph
 class Subgraph a where
   cartesianProduct :: a -> a -> a
-  join :: a -> a -> a
+  join :: SigName -> a -> a -> a
   append :: Selection -> a -> a
   one :: Selection -> a
 
 -- Build a node's graph given its subtrees' graphs; for use in `refold` or `unfold`
 joinSubgraphs :: Subgraph a => ModuleBranch a -> a
 joinSubgraphs (SigBranch _ []) = error "Holes should have at least one implementation."
-joinSubgraphs (SigBranch _ subgraphs) = foldl1' join subgraphs
+joinSubgraphs (SigBranch sig subgraphs) = foldl1' (join sig) subgraphs
 joinSubgraphs (ImplBranch impl []) = one impl
 joinSubgraphs (ImplBranch impl subraphs) = append impl $ foldl1' cartesianProduct subraphs
 
@@ -53,7 +54,7 @@ buildGraph' transform = consumeModuleGraph joinSubgraphs'
 instance Subgraph NodeSet where
   cartesianProduct (NodeSet n1) (NodeSet n2) =
     NodeSet $ Set.map (uncurry (<>)) (Set.cartesianProduct n1 n2)
-  join (NodeSet n1) (NodeSet n2) = NodeSet (n1 <> n2)
+  join _ n1 n2 = n1 <> n2
   append selection (NodeSet n) = NodeSet $ Set.map (selection <>) n
   one selection = NodeSet (Set.singleton selection)
 
@@ -73,32 +74,83 @@ instance Subgraph SelectionGraph where
     , edges = Set.map (\((a, b, d), s) -> (a<>s, b<>s, d))
               (Set.cartesianProduct e1 (unNodeSet n2) <> Set.cartesianProduct e2 (unNodeSet n1))
     }
-  join (SelectionGraph n1 e1) (SelectionGraph n2 e2) = SelectionGraph {
-      nodes = join n1 n2
+  join _ (SelectionGraph n1 e1) (SelectionGraph n2 e2) = SelectionGraph {
+      nodes = n1 <> n2
     , edges = e1 <> e2 <>
-              setMapMaybe addSelectionDelta (Set.cartesianProduct (unNodeSet n1) (unNodeSet n2))
+              setMapMaybe addDelta (Set.cartesianProduct (unNodeSet n1) (unNodeSet n2))
     }
-    where addSelectionDelta (a, b) = (a, b,) <$> selectionDelta a b
+    where addDelta (a, b) = (a, b,) <$> singleSiblingDelta a b
   append selection (SelectionGraph n e) = SelectionGraph {
       nodes = append selection n
     , edges = Set.map (\(a, b, d) -> (selection <> a, selection <> b, d)) e
     }
   one selection = SelectionGraph (one selection) Set.empty
 
-selectionDelta :: Selection -> Selection -> Maybe ModuleDelta
-selectionDelta a b =
+singleSiblingDelta :: Selection -> Selection -> Maybe ModuleDelta
+singleSiblingDelta a b =
   (\case
     [delta] -> Just delta
     _ -> Nothing)
   . filter (\(ModuleDelta _ i1 i2) -> i1 /= i2)
   . Map.elems
-  $ Map.intersectionWithKey ModuleDelta a b
+  $ Map.intersectionWithKey (\sig i1 i2 -> ModuleDelta sig (Just i1) (Just i2)) a b
+
+noSiblingsWithParents :: Set SigName -> (Selection, Selection) -> Bool
+noSiblingsWithParents parents (s1, s2) = flip all parents $ \h ->
+  case (h `Map.lookup` s1, h `Map.lookup` s2) of
+    (Nothing, _) -> True
+    (_, Nothing) -> True
+    (Just i1, Just i2) -> i1 == i2
+
+oneSibling :: (Selection, Selection) -> Bool
+oneSibling (s1, s2) = (1 ==) . length . Map.filter id $ Map.intersectionWith (==) s1 s2
+
+noSiblings :: (Selection, Selection) -> Bool
+noSiblings (s1, s2) = and $ Map.intersectionWith (==) s1 s2
 
 setMapMaybe :: (Ord b) => (a -> Maybe b) -> Set a -> Set b
 setMapMaybe f = Set.fromList . mapMaybe f . Set.toList
 
+modelGraph' :: ModularProgram -> SelectionGraph
+modelGraph' = buildGraph
+
+
+----------
+-- Selection graph with hole set
+----------
+
+data GraphWithHoles = GraphWithHoles {
+    graph :: SelectionGraph
+  , visited :: Set SigName
+  } deriving (Show, Eq, Ord)
+
+instance Subgraph GraphWithHoles where
+  cartesianProduct (GraphWithHoles g1 hs1) (GraphWithHoles g2 hs2) = GraphWithHoles {
+      graph = cartesianProduct g1 g2
+    , visited = hs1 <> hs2
+    }
+  join h (GraphWithHoles (SelectionGraph n1 e1) hs1) (GraphWithHoles (SelectionGraph n2 e2) hs2) =
+    GraphWithHoles {
+      graph = SelectionGraph {
+            nodes = n1 <> n2
+          , edges = e1 <> e2 <> joinEdges
+          }
+    , visited = Set.insert h $ hs1 <> hs2
+    }
+    where delta = ModuleDelta h Nothing Nothing
+          commonParents = Set.intersection hs1 hs2
+          joinEdges
+            = Set.map (\(s1, s2) -> (s1, s2, delta))
+            . Set.filter (noSiblingsWithParents commonParents)
+            $ Set.cartesianProduct (unNodeSet n1) (unNodeSet n2)
+  append selection (GraphWithHoles g hs) = GraphWithHoles {
+      graph = append selection g
+    , visited = hs
+    }
+  one selection = GraphWithHoles (one selection) Set.empty
+
 modelGraph :: ModularProgram -> SelectionGraph
-modelGraph = buildGraph
+modelGraph = graph . buildGraph
 
 ----------
 -- Build up the "first" selection
@@ -125,10 +177,10 @@ instance Subgraph NeighborCandidates where
   cartesianProduct (NeighborCandidates n1 o1) (NeighborCandidates n2 o2) =
     NeighborCandidates {
       noDiffs= n1 `cartesianProduct` n2
-    , oneDiffs= (o1 `cartesianProduct` n2) `join` (o2 `cartesianProduct` n1)
+    , oneDiffs= (o1 `cartesianProduct` n2) <> (o2 `cartesianProduct` n1)
     }
-  join (NeighborCandidates n1 o1) (NeighborCandidates n2 o2) =
-    NeighborCandidates (n1 `join` n2) (o1 `join` o2)
+  join _ (NeighborCandidates n1 o1) (NeighborCandidates n2 o2) =
+    NeighborCandidates (n1 <> n2) (o1 <> o2)
   append sel (NeighborCandidates n o) = NeighborCandidates (append sel n) (append sel o)
   one selection = NeighborCandidates (one selection) noNodes
 
@@ -147,4 +199,4 @@ modelNeighbors p path =
 
 modelNeighbors' :: ModularProgram -> Selection -> Set Selection
 modelNeighbors' p path =
-  Set.filter (isJust . selectionDelta path) . unNodeSet $ buildGraph p
+  Set.filter (isJust . singleSiblingDelta path) . unNodeSet $ buildGraph p
