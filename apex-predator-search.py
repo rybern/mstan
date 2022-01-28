@@ -49,9 +49,11 @@ print(results)
 
 
 hierarchy_info = [
-    ["DayofWeekTrend:Yes,DayofWeekWeights:weighted", "DayofWeekTrend:Yes,DayofWeekWeights:uniform", "DayofWeekTrend:no"],
+    ["DayofWeekTrend:yes,DayofWeekWeights:weighted", "DayofWeekTrend:yes,DayofWeekWeights:uniform", "DayofWeekTrend:no"],
     ["DayofYearTrend:yes,DayofHierarchicalVariance:yes,DayofYearNormalVariance:yes","DayofYearTrend:yes,DayofHierarchicalVariance:yes,DayofYearNormalVariance:no","DayofYearTrend:yes,DayofHierarchicalVariance:no,DayofYearNormalVariance:yes", "DayofYearTrend:no"]
-    ["HolidayTrend:Yes", "HolidayTrend:No"],
+    ["HolidayTrend:yes", "HolidayTrend:no"],
+    ["LongTermTrend:yes", "LongTermTrend:no"]
+    ["SeasonTrend:yes", "SeasonTrend:no"]
     #...
 ]  # n, n-1, ... 1
 

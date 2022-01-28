@@ -141,13 +141,14 @@ Top_level_Signature_Hierarchy = [
 ]
 
 chain = Chain_Generation(Top_level_Signature_Hierarchy)
-
+for v in chain:
+    print(v)
 data_file_dir = "examples/birthday/births_usa_1969.json"
 
 K = 3
 
-best_model, best_elpd = Chain_Search(Chain=chain, K=K, data_file_dir=data_file_dir)
-print(best_model, best_elpd)
+#best_model, best_elpd = Chain_Search(Chain=chain, K=K, data_file_dir=data_file_dir)
+#print(best_model, best_elpd)
 
 # Original Chain Generation Algorithm (Proposed earlier)
 
