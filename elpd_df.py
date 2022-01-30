@@ -16,7 +16,7 @@ def model_string_to_dict(model_string: str) -> Dict[str, str]:
     return sig_df
 
 
-def row_to_string(row: pd.DataFrame) -> Dict:
+def row_to_string(row: pd.DataFrame) -> str:
     """
     Convert a dataframe row into a mstan model string name
     """
