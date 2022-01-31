@@ -1,5 +1,8 @@
 from elpd_df import *
+from mstan_interface import get_all_model_strings
 import pandas as pd
+import numpy as np
+import pathlib
 
 elpd_results = {
     "DayOfWeekTrend:no,DayOfYearTrend:no,HolidayTrend:no,LongTermTrend:no,Regression:glm,SeasonalTrend:no": 5232.03,
@@ -51,30 +54,21 @@ elpd_results = {
     "DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearTrend:no,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes": 14109.15
 }
 
-columns = ['DayOfWeekWeights', 'HolidayTrend', 'DayOfYearNormalVariance', 'DayOfYearHeirarchicalVariance', 'Regression', 'DayOfWeekTrend', 'SeasonalTrend', 'DayOfYearTrend', 'LongTermTrend', 'elpd']
+all_model_strings = get_all_model_strings(pathlib.Path(__file__).resolve().parents[1].absolute().joinpath("examples/birthday/birthday.m.stan"))
+
 
 model_list = []
 
-for model_string, elpd in elpd_results.items():
+for model_string in all_model_strings:
     model_dict = model_string_to_dict(model_string)
-    model_dict["elpd"] = elpd
+    model_dict["elpd"] = np.nan
     model_list.append(model_dict)
 
 df = pd.DataFrame(model_list)
 
+for model_string, elpd in elpd_results.items():
+    df = upsert_model(df, model_string=model_string, elpd=elpd)
+
 save_csv(df, "birthday_df.csv")
 
-# 15301.54
-test_str = "DayOfWeekTrend:yes,DayOfWeekWeights:weighted,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:yes,DayOfYearTrend:yes,HolidayTrend:yes,LongTermTrend:yes,Regression:glm,SeasonalTrend:yes"
-
-print(model_string_to_dict(test_str))
-
-# lookup a model
-result = search_df(df, model_string_to_dict(test_str))
-print(result)
-
-print("-" * 10)
-# update/add a model and elpd value
-df = upsert_model(df, model_string=test_str, elpd=9999999)
-print(df)
 

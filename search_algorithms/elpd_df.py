@@ -20,10 +20,12 @@ def row_to_string(row: pd.DataFrame) -> str:
     """
     Convert a dataframe row into a mstan model string name
     """
-    if len(row) != 1:
+    if row.shape[0] != 1:
         raise Exception("Only a single row should be supplied")
-    dict_form = row.to_dict()
-    del dict_form["elpd"]
+    
+    dict_form = row[row.columns[~row.isnull().any()]].to_dict()
+    if "elpd" in dict_form:
+        del dict_form["elpd"]
     return ",".join(list(map(lambda x: f"{x[0]}:{list(x[1].values())[0]}", dict_form.items())))
 
 
@@ -67,7 +69,7 @@ def search_df(df: pd.DataFrame, model_dict: Dict[str, Union[str, float]] = None,
     return result if not result.empty else pd.DataFrame()
 
 def save_csv(df: pd.DataFrame, filename):
-    df.to_csv(filename)
+    df.to_csv(filename, index=False)
 
 def read_csv(filename: str):
     return pd.read_csv(filename)
