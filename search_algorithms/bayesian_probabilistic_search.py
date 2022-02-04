@@ -7,13 +7,17 @@ import pathlib
 from mstan_interface import calculate_elpd, get_all_model_strings
 import matplotlib.pyplot as plt
 
-def plot_probabilities(probabilities, filename):
-    x = list(range(len(probabilities)))
+def plot_probabilities(df, filename):
+    x = list(range(len(df.probability)))
     plt.figure()
     #plt.scatter(x, probabilities, linewidths=1)
-    plt.plot(x, probabilities)
+    plt.plot(x, df.probability)
     plt.ylim(bottom=0.0)
     plt.savefig(filename)
+
+    plt.figure()
+    plt.scatter(df.probability, df.elpd)
+    plt.savefig("elpd_" + filename)
 
 
 def bayesian_probabilstic_search(model_path, data_path, model_df_path, num_iterations=10):
@@ -80,15 +84,17 @@ def bayesian_probabilstic_search(model_path, data_path, model_df_path, num_itera
 
         
         print(model_df)
-        plot_probabilities(model_df.probability, f"prob_{iter}.png")
+        plot_probabilities(model_df, f"prob_{iter}.png")
         previous_iteration_elpd = elpd
         previons_iteration_model_dict = model_dict
 
         elpd_df.save_csv(model_df.drop(columns="probability"), "birthday_df_prob.csv")
+        elpd_df.save_csv(model_df, "bayesian_update_results.csv")
+
 
 if __name__ == "__main__":
     example_dir = pathlib.Path(__file__).resolve().parents[1].absolute().joinpath("examples")
     birthday_model_path = example_dir.joinpath("birthday/birthday.m.stan")
     birthday_data_path = example_dir.joinpath("birthday/births_usa_1969.json")
-    birthday_df_path = pathlib.Path(__file__).resolve().parent.absolute().joinpath("birthday_df.csv")
-    bayesian_probabilstic_search(birthday_model_path, birthday_data_path, birthday_df_path, num_iterations=10)
+    birthday_df_path = pathlib.Path(__file__).resolve().parent.absolute().joinpath("birthday_df_prob.csv")
+    bayesian_probabilstic_search(birthday_model_path, birthday_data_path, birthday_df_path, num_iterations=20)
