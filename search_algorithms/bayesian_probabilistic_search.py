@@ -72,6 +72,7 @@ def plot_signatures(df):
 
 
 
+
 def bayesian_probabilstic_search(model_path, data_path, model_df_path, num_iterations=10):
     # model df must contain all the models
     model_df = elpd_df.read_csv(model_df_path)
@@ -87,7 +88,10 @@ def bayesian_probabilstic_search(model_path, data_path, model_df_path, num_itera
     for iter in range(1, num_iterations + 1):
         print("-" * 20)
         print(f"iteration {iter}")
-        draw = model_df.sample(weights=model_df.probability)
+        model_df = model_df.loc[model_df["elpd"] == np.nan]
+        #draw = model_df.sample(weights=model_df.probability)
+        draw = model_df.loc[model_df["elpd"] == np.nan]
+        
         model_df.loc[draw.index, "selected"] = True
         
 
@@ -147,7 +151,7 @@ def bayesian_probabilstic_search(model_path, data_path, model_df_path, num_itera
         previous_iteration_elpd = elpd
         previons_iteration_model_dict = model_dict
 
-        elpd_df.save_csv(model_df.drop(columns=["probability", "selected"]), "birthday_df_prob.csv")
+        elpd_df.save_csv(model_df.drop(columns=["probability", "selected"]), "birthday_df.csv")
         elpd_df.save_csv(model_df, "bayesian_update_results.csv")
     
     plot_signatures(model_df)
@@ -157,5 +161,5 @@ if __name__ == "__main__":
     example_dir = pathlib.Path(__file__).resolve().parents[1].absolute().joinpath("examples")
     birthday_model_path = example_dir.joinpath("birthday/birthday.m.stan")
     birthday_data_path = example_dir.joinpath("birthday/births_usa_1969.json")
-    birthday_df_path = pathlib.Path(__file__).resolve().parent.absolute().joinpath("birthday_df_prob.csv")
+    birthday_df_path = pathlib.Path(__file__).resolve().parent.absolute().joinpath("birthday_df.csv")
     bayesian_probabilstic_search(birthday_model_path, birthday_data_path, birthday_df_path, num_iterations=20)
