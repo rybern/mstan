@@ -81,7 +81,7 @@ runCommand fileDir (ModelGraphCmd prog) = do
 
     filePath <- (\fileID -> fileDir <> "/temp_model_graph_" <> fileID <> ".json") <$> generateID
 
-    putStrLn $ "writing file.."
+    putStrLn $ "Writing file " <> show filePath <> ".."
     Text.writeFile filePath (modelGraphAlchemy graph)
     putStrLn $ "Wrote file" ++ show filePath
     return . Text.pack $ filePath
