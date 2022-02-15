@@ -74,13 +74,19 @@ runCommand :: FilePath -> Command -> IO Text
 runCommand _ (SelectCmd selections prog) =
     return . Text.intercalate "\n" . linesConcreteProgram $ selectModules prog selections
 runCommand fileDir (ModelGraphCmd prog) = do
+    putStrLn "got cmd"
     let graph = decoratedModelGraph (modelGraph prog)
+    putStrLn "Graph:"
+    print graph
 
     fileName <-
         (\fileID -> "graphs/temp_model_graph_" <> fileID <> ".json") <$> generateID
     let filePath = fileDir <> fileName
 
+    putStrLn $ "writing file.."
     Text.writeFile fileName (modelGraphAlchemy graph)
+    putStrLn $ "Wrote file" ++ show fileName
+    putStrLn $ "renaming file.."
 
     renameFile fileName filePath
     putStrLn $ "making file " <> filePath
