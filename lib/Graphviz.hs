@@ -8,6 +8,7 @@ import           Data.Map                       ( Map )
 import qualified Data.Map                      as Map
 import qualified Data.Sequence                 as Seq
 
+import           System.FilePath
 import qualified Data.Text.Lazy                as LazyText
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
@@ -23,15 +24,13 @@ import           Types
 printGraph :: DotGraph Text -> Text
 printGraph = Text.pack . LazyText.unpack . printDotGraph
 
-publishGraph :: FilePath -> Graphviz -> IO FilePath
-publishGraph fp g = do
+publishGraph :: FilePath -> Graphviz -> IO ()
+publishGraph svgFP g = do
+  let dotFP = replaceExtension svgFP "dot"
   writeDotFile dotFP g
   pid <- runCommand $ "dot " <> dotFP <> " -T svg -o " <> svgFP
   _ <- waitForProcess pid
-  return svgFP
-  where dotFP = fp <> ".dot"
-        svgFP = fp <> ".svg"
-
+  return ()
 
 data ModuleGraph = ModuleGraph [ImplID] [SigName] (Map ImplID [SigName]) (Map SigName [ImplName]) deriving (Eq, Ord, Show)
 

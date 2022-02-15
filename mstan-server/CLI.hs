@@ -7,6 +7,7 @@ import           Options.Applicative
 import           GraphServer
 import           Types
 import qualified Parsing
+import GraphServer
 
 
 data DebugParse = Silent | DebugParse deriving (Show, Eq)
@@ -53,12 +54,26 @@ parserServerOptions = do
         <> value (port $ wsOptions defaultGraphServerOptions)
         <> help "The port to use for web socket for serving the web frontend."
         )
-    graphFileDirectory <- strOption
-        (  long "graph-file-directory"
+    dirOptions <- parserDirOptions
+    return $ GraphServerOptions { wsOptions = WSServerOptions serverPort
+                                , dirOptions = dirOptions
+                                }
+
+parserDirOptions :: Parser GraphServerDirectoryOptions
+parserDirOptions = do
+    webserverRootDirectory <- strOption
+        (  long "webserver-root-directory"
         <> metavar "DIR"
-        <> value (graphFileDirectory defaultGraphServerOptions)
+        <> value (webserverRootDirectory defaultDirOptions)
         <> help "The port to use for web socket for serving the web frontend."
         )
-    return $ GraphServerOptions { wsOptions = WSServerOptions serverPort
-                                , graphFileDirectory = graphFileDirectory
-                                }
+    graphSubdirectory <- strOption
+        (  long "graph-subdirectory"
+        <> metavar "DIR"
+        <> value (graphSubdirectory defaultDirOptions)
+        <> help "The port to use for web socket for serving the web frontend."
+        )
+    return $ GraphServerDirectoryOptions
+      { graphSubdirectory = graphSubdirectory
+      , webserverRootDirectory = webserverRootDirectory
+      }
