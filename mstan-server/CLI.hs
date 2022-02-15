@@ -53,8 +53,7 @@ parserServerOptions = do
         <> value (port $ wsOptions defaultGraphServerOptions)
         <> help "The port to use for web socket for serving the web frontend."
         )
-    graphFileDirectory <- option
-        auto
+    graphFileDirectory <- strOption
         (  long "graph-file-directory"
         <> metavar "DIR"
         <> value (graphFileDirectory defaultGraphServerOptions)
