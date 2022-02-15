@@ -34,7 +34,7 @@ data GraphServerOptions = GraphServerOptions {
 defaultGraphServerOptions :: GraphServerOptions
 defaultGraphServerOptions = GraphServerOptions
     { wsOptions          = defaultWSServerOptions
-    , graphFileDirectory = "/var/www/html/"
+    , graphFileDirectory = "/var/www/html/graphs"
     }
 
 runGraphServer :: GraphServerOptions -> IO ()
@@ -79,28 +79,21 @@ runCommand fileDir (ModelGraphCmd prog) = do
     putStrLn "Graph:"
     print graph
 
-    fileName <-
-        (\fileID -> "graphs/temp_model_graph_" <> fileID <> ".json") <$> generateID
-    let filePath = fileDir <> fileName
+    filePath <- (\fileID -> fileDir <> "/temp_model_graph_" <> fileID <> ".json") <$> generateID
 
     putStrLn $ "writing file.."
-    Text.writeFile fileName (modelGraphAlchemy graph)
-    putStrLn $ "Wrote file" ++ show fileName
-    putStrLn $ "renaming file.."
-
-    renameFile fileName filePath
-    putStrLn $ "making file " <> filePath
-    return . Text.pack $ fileName
+    Text.writeFile filePath (modelGraphAlchemy graph)
+    putStrLn $ "Wrote file" ++ show filePath
+    return . Text.pack $ filePath
 runCommand fileDir (ModuleGraphCmd prog) = do
     let moduleGraph = moduleTreeGraphviz prog
 
-    graphName <- ("graphs/temp_model_graph_" <>) <$> generateID
-    fileName  <- publishGraph graphName moduleGraph
-    let filePath = fileDir <> fileName
+    -- Graphviz adds the file extension
+    graphName <- (\fileID -> fileDir <> "/temp_model_graph_" <> fileID) <$> generateID
+    filePath  <- publishGraph graphName moduleGraph
 
-    renameFile fileName filePath
-    putStrLn $ "making file " <> filePath
-    return . Text.pack $ fileName
+    putStrLn $ "made file " <> filePath
+    return . Text.pack $ filePath
 
 modelGraphAlchemy :: ModelGraph -> Text
 modelGraphAlchemy (ModelGraph nodes edges) = toObj
