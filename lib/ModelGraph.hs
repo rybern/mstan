@@ -73,7 +73,7 @@ graphCartesianProduct
   -> SelectionGraph -> SelectionGraph -> SelectionGraph
 graphCartesianProduct noSiblings' (SelectionGraph n1 e1) (SelectionGraph n2 e2) = SelectionGraph {
     nodes = cartesianProduct n1 n2
-  , edges = Set.map (\((a, b, d), s) -> let s' = Map.difference s a in (a<>s', b<>s', d))
+  , edges = Set.map (\((a, b, d), s) -> let s' = s `Map.difference` a in (a<>s', b<>s', d))
             . Set.filter (\((a, _, _), s) -> noSiblings' (a, s))
             $ (Set.cartesianProduct e1 (unNodeSet n2) <> Set.cartesianProduct e2 (unNodeSet n1))
   }

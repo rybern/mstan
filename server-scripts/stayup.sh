@@ -1,5 +1,5 @@
 while true; do
-	instances=$(pgrep mstan)
+	instances=$(pgrep mstan-server)
 	echo $instances
 	if [ -z "$instances" ]; then
 		date

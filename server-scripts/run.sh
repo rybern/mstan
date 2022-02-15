@@ -1,1 +1,1 @@
-stack exec mstan -- server
+stack exec mstan-server
