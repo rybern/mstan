@@ -53,7 +53,7 @@ buildGraph' transform = consumeModuleGraph joinSubgraphs'
 
 instance Subgraph NodeSet where
   cartesianProduct (NodeSet n1) (NodeSet n2) =
-    NodeSet $ Set.map (uncurry (<>)) (Set.cartesianProduct n1 n2)
+    NodeSet . Set.map (uncurry Map.union) . Set.filter noSiblings $ Set.cartesianProduct n1 n2
   join _ n1 n2 = n1 <> n2
   append selection (NodeSet n) = NodeSet $ Set.map (selection <>) n
   one selection = NodeSet (Set.singleton selection)
@@ -68,12 +68,18 @@ allSelections = unNodeSet . buildGraph
 -- Selection graph: set of nodes (selections) and set of edges (pairs of selections labeled with the signature that differentiates them)
 ----------
 
+graphCartesianProduct
+  :: ((Selection, Selection) -> Bool)
+  -> SelectionGraph -> SelectionGraph -> SelectionGraph
+graphCartesianProduct noSiblings' (SelectionGraph n1 e1) (SelectionGraph n2 e2) = SelectionGraph {
+    nodes = cartesianProduct n1 n2
+  , edges = Set.map (\((a, b, d), s) -> let s' = Map.difference s a in (a<>s', b<>s', d))
+            . Set.filter (\((a, _, _), s) -> noSiblings' (a, s))
+            $ (Set.cartesianProduct e1 (unNodeSet n2) <> Set.cartesianProduct e2 (unNodeSet n1))
+  }
+
 instance Subgraph SelectionGraph where
-  cartesianProduct (SelectionGraph n1 e1) (SelectionGraph n2 e2) = SelectionGraph {
-      nodes = cartesianProduct n1 n2
-    , edges = Set.map (\((a, b, d), s) -> (a<>s, b<>s, d))
-              (Set.cartesianProduct e1 (unNodeSet n2) <> Set.cartesianProduct e2 (unNodeSet n1))
-    }
+  cartesianProduct g1 g2 = graphCartesianProduct noSiblings g1 g2
   join _ (SelectionGraph n1 e1) (SelectionGraph n2 e2) = SelectionGraph {
       nodes = n1 <> n2
     , edges = e1 <> e2 <>
@@ -125,8 +131,9 @@ data GraphWithHoles = GraphWithHoles {
   } deriving (Show, Eq, Ord)
 
 instance Subgraph GraphWithHoles where
-  cartesianProduct (GraphWithHoles g1 hs1) (GraphWithHoles g2 hs2) = GraphWithHoles {
-      graph = cartesianProduct g1 g2
+  cartesianProduct (GraphWithHoles g1 hs1) (GraphWithHoles g2 hs2) =
+    GraphWithHoles {
+      graph = graphCartesianProduct (noSiblingsWithParents (Set.intersection hs1 hs2)) g1 g2
     , visited = hs1 <> hs2
     }
   join h (GraphWithHoles (SelectionGraph n1 e1) hs1) (GraphWithHoles (SelectionGraph n2 e2) hs2) =
