@@ -1,1 +1,1 @@
-stack exec mstan-server --graph-file-directory ../graphs
+stack exec mstan-server -- --webserver-root-directory "/var/www/html" --graph-subdirectory "graphs"
