@@ -11,20 +11,6 @@ import qualified Parsing
 
 data DebugParse = Silent | DebugParse deriving (Show, Eq)
 
-data RunOptions =
-    Server GraphServerOptions
-  | Exec MStanFile DebugParse (Maybe FilePath) ExecCommand
-  deriving Show
-
-data ExecCommand =
-    GetNeighbors Selection
-  | GetConcrete Selection
-  | GetMinimumSelection
-  | GetModelGraph
-  | GetModuleGraph
-  | GetAllModels
-  deriving Show
-
 parseOptions :: IO GraphServerOptions
 parseOptions = execParser
     (info (parserServerOptions <**> helper)
@@ -56,40 +42,6 @@ parserDebugParse = flag Silent DebugParse
 parserOutputFile :: Parser (Maybe FilePath)
 parserOutputFile = (\s -> if null s then Nothing else Just s) <$> strOption
     (long "output-file" <> short 'o' <> metavar "FILE" <> value "" <> help "Output file path"
-    )
-
-parserExecCommand :: Parser ExecCommand
-parserExecCommand = hsubparser
-    (  command
-          "get-neighbors"
-          (info (GetNeighbors <$> parserSelection)
-                (progDesc "Get model IDs of the neighbors of a model")
-          )
-    <> command
-           "get-model"
-           (info (GetConcrete <$> parserSelection)
-                 (progDesc "Get the concrete Stan model given a model ID")
-           )
-    <> command
-           "get-module-graph"
-           (info (pure GetModuleGraph)
-                 (progDesc "Generate a representation of the module graph of the modular Stan program.")
-           )
-    <> command
-           "get-model-graph"
-           (info (pure GetModelGraph)
-                 (progDesc "Generate a representation of the model graph of the modular Stan program.")
-           )
-    <> command
-           "get-first-model"
-           (info (pure GetMinimumSelection)
-                 (progDesc "Get an arbitrary model ID")
-           )
-    <> command
-           "get-all-models"
-           (info (pure GetAllModels)
-                 (progDesc "Get all model IDs")
-           )
     )
 
 parserServerOptions :: Parser GraphServerOptions
