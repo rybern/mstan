@@ -27,14 +27,15 @@ library
                        -Wincomplete-record-updates
                        -Wincomplete-uni-patterns
                        -Wredundant-constraints
-  build-depends:       base >= 4.7 && < 5,
-                       containers >= 0.6.2.1,
-                       text,
+  build-depends:       algebraic-graphs,
                        attoparsec,
-                       process,
-                       graphviz,
-                       algebraic-graphs,
+                       base >= 4.7 && < 5,
+                       containers >= 0.6.2.1,
                        data-fix >= 0.3.0,
+                       filepath >= 1.4.2.1,
+                       graphviz,
+                       process,
+                       text,
                        uglymemo
 
 
@@ -70,9 +71,10 @@ executable mstan-server
   build-depends:       base >= 4.7 && < 5,
                        bytestring >= 0.10.10.1,
                        containers >= 0.6.2.1,
-                       optparse-applicative,
                        directory,
+                       filepath >= 1.4.2.1,
+                       mstan,
+                       optparse-applicative,
                        random,
                        text,
-                       websockets,
-                       mstan
+                       websockets

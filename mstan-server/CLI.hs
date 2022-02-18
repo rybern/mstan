@@ -7,23 +7,10 @@ import           Options.Applicative
 import           GraphServer
 import           Types
 import qualified Parsing
+import GraphServer
 
 
 data DebugParse = Silent | DebugParse deriving (Show, Eq)
-
-data RunOptions =
-    Server GraphServerOptions
-  | Exec MStanFile DebugParse (Maybe FilePath) ExecCommand
-  deriving Show
-
-data ExecCommand =
-    GetNeighbors Selection
-  | GetConcrete Selection
-  | GetMinimumSelection
-  | GetModelGraph
-  | GetModuleGraph
-  | GetAllModels
-  deriving Show
 
 parseOptions :: IO GraphServerOptions
 parseOptions = execParser
@@ -58,40 +45,6 @@ parserOutputFile = (\s -> if null s then Nothing else Just s) <$> strOption
     (long "output-file" <> short 'o' <> metavar "FILE" <> value "" <> help "Output file path"
     )
 
-parserExecCommand :: Parser ExecCommand
-parserExecCommand = hsubparser
-    (  command
-          "get-neighbors"
-          (info (GetNeighbors <$> parserSelection)
-                (progDesc "Get model IDs of the neighbors of a model")
-          )
-    <> command
-           "get-model"
-           (info (GetConcrete <$> parserSelection)
-                 (progDesc "Get the concrete Stan model given a model ID")
-           )
-    <> command
-           "get-module-graph"
-           (info (pure GetModuleGraph)
-                 (progDesc "Generate a representation of the module graph of the modular Stan program.")
-           )
-    <> command
-           "get-model-graph"
-           (info (pure GetModelGraph)
-                 (progDesc "Generate a representation of the model graph of the modular Stan program.")
-           )
-    <> command
-           "get-first-model"
-           (info (pure GetMinimumSelection)
-                 (progDesc "Get an arbitrary model ID")
-           )
-    <> command
-           "get-all-models"
-           (info (pure GetAllModels)
-                 (progDesc "Get all model IDs")
-           )
-    )
-
 parserServerOptions :: Parser GraphServerOptions
 parserServerOptions = do
     serverPort <- option
@@ -101,13 +54,26 @@ parserServerOptions = do
         <> value (port $ wsOptions defaultGraphServerOptions)
         <> help "The port to use for web socket for serving the web frontend."
         )
-    graphFileDirectory <- option
-        auto
-        (  long "graph-file-directory"
+    dirOptions <- parserDirOptions
+    return $ GraphServerOptions { wsOptions = WSServerOptions serverPort
+                                , dirOptions = dirOptions
+                                }
+
+parserDirOptions :: Parser GraphServerDirectoryOptions
+parserDirOptions = do
+    webserverRootDirectory <- strOption
+        (  long "webserver-root-directory"
         <> metavar "DIR"
-        <> value (graphFileDirectory defaultGraphServerOptions)
+        <> value (webserverRootDirectory defaultDirOptions)
         <> help "The port to use for web socket for serving the web frontend."
         )
-    return $ GraphServerOptions { wsOptions = WSServerOptions serverPort
-                                , graphFileDirectory = graphFileDirectory
-                                }
+    graphSubdirectory <- strOption
+        (  long "graph-subdirectory"
+        <> metavar "DIR"
+        <> value (graphSubdirectory defaultDirOptions)
+        <> help "The port to use for web socket for serving the web frontend."
+        )
+    return $ GraphServerDirectoryOptions
+      { graphSubdirectory = graphSubdirectory
+      , webserverRootDirectory = webserverRootDirectory
+      }

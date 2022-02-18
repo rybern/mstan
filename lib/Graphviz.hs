@@ -8,6 +8,7 @@ import           Data.Map                       ( Map )
 import qualified Data.Map                      as Map
 import qualified Data.Sequence                 as Seq
 
+import           System.FilePath
 import qualified Data.Text.Lazy                as LazyText
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
@@ -23,22 +24,37 @@ import           Types
 printGraph :: DotGraph Text -> Text
 printGraph = Text.pack . LazyText.unpack . printDotGraph
 
-publishGraph :: FilePath -> Graphviz -> IO FilePath
-publishGraph fp g = do
+publishGraph :: FilePath -> Graphviz -> IO ()
+publishGraph svgFP g = do
+  let dotFP = replaceExtension svgFP "dot"
   writeDotFile dotFP g
   pid <- runCommand $ "dot " <> dotFP <> " -T svg -o " <> svgFP
   _ <- waitForProcess pid
-  return svgFP
-  where dotFP = fp <> ".dot"
-        svgFP = fp <> ".svg"
-
+  return ()
 
 data ModuleGraph = ModuleGraph [ImplID] [SigName] (Map ImplID [SigName]) (Map SigName [ImplName]) deriving (Eq, Ord, Show)
 
 data ModelNode = ModelNode Text deriving (Eq, Ord, Show)
-data ModuleDelta = ModuleDelta Text Text Text deriving (Eq, Ord, Show)
 
 data ModelGraph = ModelGraph (Set ModelNode) [(ModelNode, ModelNode, ModuleDelta)] deriving (Eq, Ord, Show)
+
+-- Build a GraphViz representation from the SelectionGraph
+modelGraphviz :: SelectionGraph -> Graphviz
+modelGraphviz g = modelGraphToDot (decoratedModelGraph g)
+
+-- Node- and Edge-set representation of the graph of models for visualization
+decoratedModelGraph :: SelectionGraph -> ModelGraph
+decoratedModelGraph g = ModelGraph allModels modelEdges
+  where
+    (SelectionGraph (NodeSet nodes) edges) = g
+    toNode = ModelNode . showSel
+    allModels = Set.map toNode nodes
+    modelEdges = map (\(a, b, d) -> (toNode a, toNode b, d)) . Set.toList $ edges
+
+showSel :: Selection -> Text
+showSel = Text.unlines
+          . map (\(SigName sig, ImplName impl) -> sig <> ": " <> impl)
+          . Map.toList
 
 implID :: ImplID -> Text
 implID (ImplID (SigName s) (ImplName i)) = s <> ":" <> i

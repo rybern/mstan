@@ -64,14 +64,14 @@ execCommand prog GetHighestModels = do
 execCommand prog GetMinimumSelection = return $
   [showSelection $ firstSelection prog]
 execCommand prog GetModelGraph = do
-  let graphviz = modelGraphviz prog
-  let graphName = "model_graph"
-  filePath  <- publishGraph graphName graphviz
+  let graphviz = modelGraphviz (modelGraph prog)
+  let filePath = "model_graph.svg"
+  publishGraph filePath graphviz
   return [Text.pack filePath]
 execCommand prog GetModuleGraph = do
   let moduleGraph = moduleTreeGraphviz prog
-  let graphName = "module_tree"
-  filePath  <- publishGraph graphName moduleGraph
+  let filePath = "module_tree.svg"
+  publishGraph filePath moduleGraph
   return [Text.pack filePath]
 execCommand prog GetAllModels = do
   let sels = allSelections prog
