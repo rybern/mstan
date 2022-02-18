@@ -10,6 +10,7 @@ from mstan_interface import calculate_elpd, get_all_model_strings
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
+expectation_values = []
 
 def plot_probabilities(df, iteration):
     plt.figure()
@@ -27,6 +28,12 @@ def plot_probabilities(df, iteration):
     ax1.set_xlabel("probability")
     ax1.set_ylabel("ELPD")
     filtered = df[~df.elpd.isna() & df.selected]
+    #filtered = filtered[filtered.elpd > -1e+5]
+    if filtered.shape[0] == 0:
+        return
+
+    #filtered.loc[:, "elpd"] = filtered.elpd / 1e+30
+    #filtered = filtered[~filtered.elpd.isna() & filtered.elpd > -1e+5]
     linear_regressor = LinearRegression()
     linear_regressor.fit(filtered.probability.values.reshape(-1, 1), filtered.elpd.values.reshape(-1, 1))
     ax1.scatter(filtered.probability, filtered.elpd)
@@ -36,6 +43,8 @@ def plot_probabilities(df, iteration):
     ax2.set_xlabel("probability")
     ax2.set_ylabel("ELPD")
     filtered = df[~df.elpd.isna()]
+    expectation_values.append(np.dot(filtered.probability.values, filtered.elpd.values))
+    #filtered.loc[:, "elpd"] = filtered.elpd / 1e+30
     linear_regressor = LinearRegression()
     linear_regressor.fit(filtered.probability.values.reshape(-1, 1), filtered.elpd.values.reshape(-1, 1))
     ax2.scatter(filtered.probability, filtered.elpd)
@@ -73,7 +82,8 @@ def plot_signatures(df):
 ################
 
 
-def bayesian_probabilistic_score_based_search(model_path, data_path, model_df, num_iterations=10):
+def bayesian_probabilistic_score_based_search(model_path, data_path, model_df_path, num_iterations=10):
+    model_df = elpd_df.read_csv(model_df_path)
     model_count = model_df.shape[0]
     model_df["probability"] = 1.0 / model_count
     model_df["selected"] = False
@@ -85,6 +95,8 @@ def bayesian_probabilistic_score_based_search(model_path, data_path, model_df, n
     for i in range(model_count):
         for signature in list(model_df.drop(columns=["probability", "selected"]).columns):
             implementation = model_df.loc[i, signature]
+            if signature not in Implementation_score_dict:
+                Implementation_score_dict[signature] = {}
             Implementation_score_dict[signature][implementation] = [0,0]
     # iteration 시작
     for iteration in range(num_iterations):
@@ -108,6 +120,7 @@ def bayesian_probabilistic_score_based_search(model_path, data_path, model_df, n
         # (2) for each signature, compute its score (store it in a dictionary. ex) implementation: [ELPD score sum, number of occurences])
         for signature in list(model_df.drop(columns=["probability", "selected"]).columns):
             implementation = model_df.loc[draw.index, signature]
+            implementation = implementation.values[0]
             Implementation_score_dict[signature][implementation] = [Implementation_score_dict[signature][implementation][0]+elpd,Implementation_score_dict[signature][implementation][1]+1]
     # (3) calculate the score of each model
         Score = []
@@ -117,16 +130,35 @@ def bayesian_probabilistic_score_based_search(model_path, data_path, model_df, n
                 if Implementation_score_dict[signature][model_df.loc[i,signature]][1] > 0:
                     model_score +=Implementation_score_dict[signature][model_df.loc[i,signature]][0]/Implementation_score_dict[signature][model_df.loc[i,signature]][1]
                 else:
-                    sum_scores_already_computed_implementations =  sum([val[0]/val[1] if val[1] > 0 else 0 for val in Implementation_score_dict[signature].values])
-                    num_zero_occurence_implementations = sum([1 if val[1] == 0 else 0 for val in Implementation_score_dict[signature].values])
+                    sum_scores_already_computed_implementations =  sum([val[0]/val[1] if val[1] > 0 else 0 for val in Implementation_score_dict[signature].values()])
+                    num_zero_occurence_implementations = sum([1 if val[1] == 0 else 0 for val in Implementation_score_dict[signature].values()])
                     model_score += sum_scores_already_computed_implementations/num_zero_occurence_implementations
             Score.append(model_score)
+
+        min_score = min(Score)
+        if min_score < 0:
+            for x in range(len(Score)):
+                Score[x] = Score[x] - min_score
         # (4) calculate the sum of the scores of models
         Score_sum = sum(Score)
         # (5) update the probability of each model
         for i in range(model_count):
             model_df.loc[i, "probability"] = Score[i] / Score_sum
+
+        plot_probabilities(model_df, iteration)
+
+
+    plot_signatures(model_df)
+    plt.figure()
+    print(expectation_values)
+    plt.plot(list(range(len(expectation_values))), expectation_values, "ro")
+    linear_regressor = LinearRegression()
+    linear_regressor.fit(np.array(list(range(len(expectation_values)))).reshape(-1, 1), np.array(expectation_values).reshape(-1, 1))
+    plt.plot(np.array(list(range(len(expectation_values)))), linear_regressor.predict(np.array(list(range(len(expectation_values)))).reshape(-1, 1)), color="red")
+    plt.savefig("score_based_iteration-expectation_plot.png")
+
     final_model = draw.drop(columns=["probability", "selected"])
+    elpd_df.save_csv(model_df, "score_based_results.csv")
     return final_model
 
 
@@ -207,16 +239,26 @@ def bayesian_probabilstic_search(model_path, data_path, model_df_path, num_itera
         elpd_df.save_csv(model_df, "bayesian_update_results.csv")
     
     plot_signatures(model_df)
+    plt.figure()
+    print(expectation_values)
+    plt.plot(list(range(len(expectation_values))), expectation_values, "ro")
+    linear_regressor = LinearRegression()
+    linear_regressor.fit(np.array(list(range(len(expectation_values)))).reshape(-1, 1), np.array(expectation_values).reshape(-1, 1))
+    plt.plot(np.array(list(range(len(expectation_values)))), linear_regressor.predict(np.array(list(range(len(expectation_values)))).reshape(-1, 1)), color="red")
+    plt.savefig("probability_based_iteration-expectation_plot.png")
 
 
 if __name__ == "__main__":
     example_dir = pathlib.Path(__file__).resolve().parents[1].absolute().joinpath("examples")
+
     # birthday_model_path = example_dir.joinpath("birthday/birthday.m.stan")
     # birthday_data_path = example_dir.joinpath("birthday/births_usa_1969.json")
     # birthday_df_path = pathlib.Path(__file__).resolve().parent.absolute().joinpath("birthday_df.csv")
-    # bayesian_probabilstic_search(birthday_model_path, birthday_data_path, birthday_df_path, num_iterations=20)
+    #bayesian_probabilstic_search(birthday_model_path, birthday_data_path, birthday_df_path, num_iterations=20)
+    #bayesian_probabilistic_score_based_search(birthday_model_path, birthday_data_path, birthday_df_path, num_iterations=20)
 
     roach_model_path = example_dir.joinpath("roach/roach.m.stan")
     roach_data_path = example_dir.joinpath("roach/roach.json")
     roach_df_path = pathlib.Path(__file__).resolve().parent.absolute().joinpath("roach_df.csv")
-    bayesian_probabilstic_search(roach_model_path, roach_data_path, roach_df_path, num_iterations=90)
+    # bayesian_probabilstic_search(roach_model_path, roach_data_path, roach_df_path, num_iterations=20)
+    bayesian_probabilistic_score_based_search(roach_model_path, roach_data_path, roach_df_path, num_iterations=20)
