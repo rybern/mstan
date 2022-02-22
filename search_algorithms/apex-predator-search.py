@@ -1,4 +1,6 @@
 import subprocess
+import pathlib
+import elpd_df
 
 def text_command(args):
     """Run a shell command, return its stdout as a String or throw an exception if it fails."""
@@ -14,17 +16,25 @@ def text_command(args):
 
 
 class ModelEvaluator:
-    def __init__(self, dataFile):
-        self.dataFile = dataFile
+    def __init__(self, df_path):
+        self.df_path = df_path
+        self.df = elpd_df.read_csv(df_path)
 
-    def score(self, modelPath):
+    def score(self, model_string):
         """Return the numerical score for the Stan program at the given filepath"""
-        stdout_result = text_command(["Rscript", "elpd.R", modelPath, self.dataFile])
-        return float(stdout_result.split('\n')[-1].strip())
+        elpd = elpd_df.search_df(self.df, model_string=model_string).elpd.values[0]
+        return elpd
 
-model_file_name = "examples/birthday/birthday.m.stan"
 
-args = ["mstan", "-f", model_file_name, "get-highest-models"]
+example_dir = pathlib.Path(__file__).resolve().parents[1].absolute().joinpath("examples")
+model_file_path = example_dir.joinpath("birthday/birthday.m.stan")
+model_df_path = "birthday_df.csv"
+
+model_file_path = example_dir.joinpath("roach/roach.m.stan")
+model_df_path = "roach_df.csv"
+
+
+args = ["mstan", "-f", model_file_path, "get-highest-models"]
 
 result = subprocess.run(args, text=True, check=True,
                         stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
@@ -34,32 +44,26 @@ stdout = result.stdout.strip().split("\n")
 results = {}
 
 for model in stdout:
-    model_code_args = ["mstan", "-f", model_file_name, "concrete-model", "-s", model,]
-    print(model_code_args)
-    model_code = subprocess.run(model_code_args, text=True, check=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE).stdout.strip()
-    with open("temp_stanmodel.stan", "w") as f:
-        f.write(model_code)
-    
-    result = ModelEvaluator("examples/birthday/births_usa_1969.json").score("temp_stanmodel.stan")
+    result = ModelEvaluator(model_df_path).score(model)
     results[model] = result
 
-print(results)
+
+for key, val in results.items():
+    print(f"{key} : {val}")
 
 
+# hierarchy_info = [
+#     ["DayofWeekTrend:yes,DayofWeekWeights:weighted", "DayofWeekTrend:yes,DayofWeekWeights:uniform", "DayofWeekTrend:no"],
+#     ["DayofYearTrend:yes,DayofHierarchicalVariance:yes,DayofYearNormalVariance:yes","DayofYearTrend:yes,DayofHierarchicalVariance:yes,DayofYearNormalVariance:no","DayofYearTrend:yes,DayofHierarchicalVariance:no,DayofYearNormalVariance:yes", "DayofYearTrend:no"]
+#     ["HolidayTrend:yes", "HolidayTrend:no"],
+#     ["LongTermTrend:yes", "LongTermTrend:no"]
+#     ["SeasonTrend:yes", "SeasonTrend:no"]
+#     #...
+# ]  # n, n-1, ... 1
 
+# current_model = ["DayofWeek:Yes", "HolidayTrend:Yes"]
 
-hierarchy_info = [
-    ["DayofWeekTrend:yes,DayofWeekWeights:weighted", "DayofWeekTrend:yes,DayofWeekWeights:uniform", "DayofWeekTrend:no"],
-    ["DayofYearTrend:yes,DayofHierarchicalVariance:yes,DayofYearNormalVariance:yes","DayofYearTrend:yes,DayofHierarchicalVariance:yes,DayofYearNormalVariance:no","DayofYearTrend:yes,DayofHierarchicalVariance:no,DayofYearNormalVariance:yes", "DayofYearTrend:no"]
-    ["HolidayTrend:yes", "HolidayTrend:no"],
-    ["LongTermTrend:yes", "LongTermTrend:no"]
-    ["SeasonTrend:yes", "SeasonTrend:no"]
-    #...
-]  # n, n-1, ... 1
-
-current_model = ["DayofWeek:Yes", "HolidayTrend:Yes"]
-
-chain = []
-chain.append(",".join(current_model))
-current_model[0] = hierarchy_info[0][1]
-chain.append(",".join(current_model))
+# chain = []
+# chain.append(",".join(current_model))
+# current_model[0] = hierarchy_info[0][1]
+# chain.append(",".join(current_model))

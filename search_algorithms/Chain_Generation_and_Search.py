@@ -2,6 +2,9 @@ import numpy as np
 import random
 import subprocess
 import sys
+import pathlib
+import elpd_df
+
 
 # Generate a chain given the Top_level_Signature_Hierarchy information
 # The following function returns a chain of models where for any i, the ith model's model complexity is strictly higher than that of the (i+1)th model
@@ -45,42 +48,16 @@ def Chain_Generation(Top_level_Signature_Hierarchy):
 
 
 
-def text_command(args):
-    """Run a shell command, return its stdout as a String or throw an exception if it fails."""
-
-    try:
-        result = subprocess.run(args, text=True, check=True,
-                                stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-
-        stdout = result.stdout.strip()
-        return stdout
-    except subprocess.CalledProcessError as exc:
-        sys.exit("Error in `mstan`: \"" + exc.output.strip() + "\"")
-
-
-class ModelEvaluator:
-    def __init__(self, dataFile):
-        self.dataFile = dataFile
-
-    def score(self, modelPath):
-        """Return the numerical score for the Stan program at the given filepath"""
-        stdout_result = text_command(["Rscript", "elpd.R", modelPath, self.dataFile])
-        return float(stdout_result.split('\n')[-1].strip())
-
 
 # Compute the ELPD value of a model
 # model is a list where its ith element is a string that represents the implementation for the ith top-level signature
-def ELPD(model, data_file):
+def ELPD(model):
     
     # use the elements of 'model' (type: list) to obtain the full 'name' of the model
     # Then use 'STAN' to compute ELPD of the model (based on the 'model name' obtained above)
-    model_code_args = ["mstan", "-f", "birthday.m.stan", "concrete-model", "-s", ",".join(model) + ",Regression:glm",]
-    model_code = text_command(model_code_args)
-    with open("temp_stanmodel.stan", "w") as f:
-        f.write(model_code)
-    result = ModelEvaluator(data_file).score("temp_stanmodel.stan")
-    print(f"model: {','.join(model)} ELPD:{result}")
-    return result
+    df = elpd_df.read_csv("roach_df.csv")
+    result = elpd_df.search_df(df, model_string=",".join(model))
+    return result.elpd.values[0]
 
 
 # Chain is a list whose elements are individual models. Each model is a list that consists of the implementations of the top-level signatures.
@@ -90,7 +67,7 @@ def ELPD(model, data_file):
 # and finally returns the model with the highest ELPD value and its ELPD value (among those that the ELPD values were computed)
 # Suppose that the chain is given as an input and the models are sorted in a decreasing order of model complexity.
 # i.e. the 1st model in the chain has the highest model complexity and the last model has the lowest complexity.
-def Chain_Search(Chain,K,data_file_dir, alpha=0.5):
+def Chain_Search(Chain,K, alpha=0.5):
     n = len(Chain)
     # if number of models in the chain is smaller than or equal to K, we can compute ELPD values of each model and choose the one with the highest value
     if n <=K:
@@ -106,23 +83,28 @@ def Chain_Search(Chain,K,data_file_dir, alpha=0.5):
         ELPD_values_obtained = []
         while num_ELPD_computed < K and cur_ind < n:
             # compute the ELPD value of the current iteration's model
-            cur_iter_ELPD = ELPD(Chain[cur_ind], data_file_dir)
+            print(f"current index: {cur_ind}")
+            cur_iter_ELPD = ELPD(Chain[cur_ind])
             # update the ELPD compute model indices, ELPD values, the nubmer of ELPD values computed obtained respectively
             ELPD_computed_model_indices.append(cur_ind)
             ELPD_values_obtained.append(cur_iter_ELPD)
             num_ELPD_computed+=1
+            if num_ELPD_computed == K:
+                break
             step_size = 1 # set default step size as 1
             # if it is neither the 1st nor the 2nd iteration, the step size should be modified.
             if not (num_ELPD_computed == 1 or num_ELPD_computed==2):
                 step_size_Uniform = (n-1-cur_ind)/(K-num_ELPD_computed)
                 step_size_LB = step_size_Uniform*(1-alpha)
                 step_size_UB = step_size_Uniform*(1+alpha)
+                print(ELPD_values_obtained)
                 ELPD_slope_cur_iter = abs((ELPD_values_obtained[-1]-ELPD_values_obtained[-2]))/(ELPD_computed_model_indices[-1]-ELPD_computed_model_indices[-2])
                 ELPD_slope_previous_iter = abs((ELPD_values_obtained[-2]-ELPD_values_obtained[-3]))/(ELPD_computed_model_indices[-2]-ELPD_computed_model_indices[-3])
                 step_size_candidate = step_size_Uniform*(ELPD_slope_previous_iter/ELPD_slope_cur_iter)
                 step_size = min(step_size_UB,min(step_size_LB,step_size_candidate))
+                print(step_size)
             # update the current index (which would the index of the model in the next iteration)
-            cur_ind += step_size
+            cur_ind += max(1, round(step_size))
         # find the best model (the model with the highest ELPD value) among the models whose ELPD values were computed.
         highest_ELPD_value_model_chain_search_ind = np.argmax(ELPD_values_obtained)
         Final_best_ELPD_model_ind, Final_best_ELPD_val = ELPD_computed_model_indices[highest_ELPD_value_model_chain_search_ind], ELPD_values_obtained[highest_ELPD_value_model_chain_search_ind]
@@ -135,20 +117,39 @@ def Chain_Search(Chain,K,data_file_dir, alpha=0.5):
 Top_level_Signature_Hierarchy = [
     ["DayOfWeekTrend:yes,DayOfWeekWeights:weighted","DayOfWeekTrend:yes,DayOfWeekWeights:uniform","DayOfWeekTrend:no"],
     ["DayOfYearTrend:yes,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:yes","DayOfYearTrend:yes,DayOfYearHeirarchicalVariance:yes,DayOfYearNormalVariance:no","DayOfYearTrend:yes,DayOfYearHeirarchicalVariance:no,DayOfYearNormalVariance:no","DayOfYearTrend:no"],
-    ["HolidayTrend:yes","HolidayTrend:yes"],
+    ["HolidayTrend:yes","HolidayTrend:no"],
     ["LongTermTrend:yes","LongTermTrend:no"],
     ["SeasonalTrend:yes","SeasonalTrend:no"]
 ]
 
-chain = Chain_Generation(Top_level_Signature_Hierarchy)
-for v in chain:
-    print(v)
-data_file_dir = "examples/birthday/births_usa_1969.json"
+Top_level_Signature_Hierarchy_Roach = [
+    ["Likelihood:NegBinomial,PhiPrior:normal", "Likelihood:NegBinomial,PhiPrior:cauchy", "Likelihood:Poisson,RandomEffects:yes", "Likelihood:Poisson,RandomEffects:no"],
+    ["OffsetType:log", "OffsetType:identity"],
+    ["Roach:sqrt", "Roach:identity", "Roach:no"],
+    ["Treatment:yes", "Treatment:no"],
+    ["Senior:yes", "Senior:no"]
+]
 
-K = 3
+#chain = Chain_Generation(Top_level_Signature_Hierarchy)
+chain = Chain_Generation(Top_level_Signature_Hierarchy_Roach)
+print(f"chain length: {len(chain)}")
+for val in chain:
+    model_string=",".join(val)
+    df = elpd_df.read_csv("roach_df.csv")
+    result = elpd_df.search_df(df, model_string=model_string)
+    print(val, result)
 
-#best_model, best_elpd = Chain_Search(Chain=chain, K=K, data_file_dir=data_file_dir)
-#print(best_model, best_elpd)
+print("-" * 10)
+K = 5
+alpha = 0.9
+# alpha: [0, 1] 값이 클수록 uniform stepsize와 근접한 stepsize(=비교적 균일한 stepsize)로 움직임.
+# 넓은 영역에 대해 선형근사가 잘 된다고 생각되면(diverse model space) 큰 alpha를 사용하여 도약을 크게 가짐.
+# 모델 공간이 균질한 경우 alpha를 작게 만들어 보수적으로 탐색함(subtle model changes may lead to large elpd differences)
+# 0.1 vs 0.9 양극단에 있는 값을 사용해야 그나마 stepsize의 차이가 관찰됨
+# k는 다양한 값을 시도해봄(m>=k>=3)
+
+best_model, best_elpd = Chain_Search(Chain=chain, K=K, alpha=alpha)
+print(best_model, best_elpd)
 
 # Original Chain Generation Algorithm (Proposed earlier)
 
