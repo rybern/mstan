@@ -22,6 +22,52 @@ import           Types
 import           Prelude                 hiding ( takeWhile )
 import Indent
 
+parseCollectionHole :: Text -> Maybe Text
+parseCollectionHole s = case parseOnly parserCollectionHole s of
+    Left  _   -> Nothing
+    Right res -> Just res
+
+parserCollectionHole :: Parser Text
+parserCollectionHole = do
+  sig  <- takeTill (inClass "*")
+  _ <- char '*'
+  return sig
+
+parseUnexpandedSelections :: Text -> Maybe UnexpendedSelection
+parseUnexpandedSelections s = case parseOnly parserUnexpandedSelections s of
+    Left  _   -> Nothing
+    Right res -> Just res
+
+parserUnexpandedSelections :: Parser UnexpendedSelection
+parserUnexpandedSelections = do
+    let pair = do
+            sig  <- takeTill (inClass ",:")
+            _    <- char ':'
+            impl <- parserUnexpandedImpls
+            return (SigName sig, impl)
+    pairs <- sepBy pair ","
+    return $ Map.fromList pairs
+
+parserImplName :: Parser ImplName
+parserImplName = do
+    impl <- takeTill (inClass ",:;]")
+    return $ ImplName impl
+
+parseUnexpandedImpls :: Text -> Maybe UnexpandedImpls
+parseUnexpandedImpls s = case parseOnly parserUnexpandedImpls s of
+    Left  _   -> Nothing
+    Right res -> Just res
+
+parserUnexpandedImpls :: Parser UnexpandedImpls
+parserUnexpandedImpls = choice [
+  do char '['
+     coll <- UXCollection <$> sepBy parserImplName (char ';')
+     char ']'
+     return coll
+    -- char '[' >> UXCollection <$> sepBy parserImplName (char ';') <* char ']'
+  , UXImpl <$> parserImplName
+  ]
+
 parseSelections :: Text -> Maybe (Map SigName ImplName)
 parseSelections s = case parseOnly parserSelections s of
     Left  _   -> Nothing

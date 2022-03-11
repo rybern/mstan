@@ -42,7 +42,19 @@ newtype ConcreteCode = ConcreteCode { unconcreteCode :: Code }
   deriving Semigroup via Code
   deriving Monoid via Code
 
+-- Eventually nested
+data UnexpandedImpls = UXImpl ImplName | UXCollection [ImplName]
+  deriving (Show, Eq, Ord)
+type UnexpendedSelection = Map SigName UnexpandedImpls
+
 type Selection = Map SigName ImplName
+
+showUnexpandedImpls :: UnexpandedImpls -> Text
+showUnexpandedImpls (UXImpl (ImplName i)) = i
+showUnexpandedImpls (UXCollection impls) = "[" <> Text.intercalate "," (map unImplName impls) <> "]"
+
+showUnexpandedSelection :: UnexpendedSelection -> Text
+showUnexpandedSelection = Text.intercalate "," . map (\(SigName sig, uxImpl) -> sig <> ":" <> showUnexpandedImpls uxImpl) . Map.toList
 
 showSelection :: Selection -> Text
 showSelection = Text.intercalate "," . map (\(SigName sig, ImplName impl) -> sig <> ":" <> impl) . Map.toList
@@ -108,15 +120,18 @@ instance Semigroup code => Semigroup (Blocks code) where
     , gq = gq blocks1 <> gq blocks2
     }
 
-instance Semigroup code => Monoid (Blocks code) where
-  mempty = Blocks {
-      functions = Nothing
-    , td = Nothing
-    , params = Set.empty
-    , tp = Nothing
-    , model = Nothing
-    , gq = Nothing
+emptyBlocks :: Blocks code
+emptyBlocks = Blocks {
+  functions = Nothing
+  , td = Nothing
+  , params = Set.empty
+  , tp = Nothing
+  , model = Nothing
+  , gq = Nothing
     }
+
+instance Semigroup code => Monoid (Blocks code) where
+  mempty = emptyBlocks
 
 data ModuleField code = ModuleField
   { fieldBody :: code

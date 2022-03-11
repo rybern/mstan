@@ -19,7 +19,8 @@ library
                        Parsing,
                        Graphviz,
                        Types,
-                       Printing
+                       Printing,
+                       Macros
   hs-source-dirs:      lib
   default-language:    Haskell2010
   ghc-options:         -Wall
