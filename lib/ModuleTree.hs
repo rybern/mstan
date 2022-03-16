@@ -8,6 +8,8 @@ module ModuleTree (
   , moduleTreeGraphviz
   , ModuleBranch (..)
   , Node (..)
+  , implSigs
+  , sigImpls
   ) where
 
 
