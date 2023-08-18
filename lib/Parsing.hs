@@ -44,6 +44,9 @@ parseSigLine sigName line = case parseOnly (parserSigLine sigName) line of
     Left  _   -> Nothing
     Right res -> Just res
 
+-- parserNonNameChar :: Parser Char
+-- parserNonNameChar = sati
+  
 parserSigLine :: FullSigName -> Parser ([Expr], Maybe (Expr -> Text))
 parserSigLine (FullSigName sigName) = choice
   [ do
@@ -65,7 +68,8 @@ parserSigLine (FullSigName sigName) = choice
       _ <- char ';'
       return (args, Nothing)
   , do
-      left  <- manyTill anyChar $ string sigName
+      -- left  <- manyTill anyChar $ (satisfy isVariableChar *> string sigName)
+      left  <- manyTill anyChar $ (satisfy isVariableChar *> string sigName)
       skipSpace
       args  <- parserArgs
       right <- many' anyChar
