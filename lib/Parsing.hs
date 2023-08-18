@@ -50,6 +50,7 @@ parseSigLine sigName line = case parseOnly (parserSigLine sigName) line of
 parserSigLine :: FullSigName -> Parser ([Expr], Maybe (Expr -> Text))
 parserSigLine (FullSigName sigName) = choice
   [ do
+      -- case: ~ statement
       left <- manyTill anyChar $ char '~'
       let samplee = Expr . Text.strip . Text.pack $ left
       skipSpace
@@ -60,6 +61,7 @@ parserSigLine (FullSigName sigName) = choice
       _ <- char ';'
       return (samplee : args, Nothing)
   , do
+      -- case: statement
       skipSpace
       _ <- string sigName
       skipSpace
@@ -68,9 +70,14 @@ parserSigLine (FullSigName sigName) = choice
       _ <- char ';'
       return (args, Nothing)
   , do
+      -- case: expression
       -- left  <- manyTill anyChar $ (string sigName)
-      left  <- manyTill anyChar $ (satisfy (not . isVariableChar) *> string sigName)
-      skipSpace
+      
+      left  <- choice [ --case: amidst other characters, make sure it's not part of a larger variable name
+                        manyTill anyChar $ (satisfy (not . isVariableChar) *> string sigName)
+                        --case: start of a line
+                      , manyTill (satisfy isSpace) $ string sigName
+                      ]
       args  <- parserArgs
       right <- many' anyChar
       return (args, Just $ \(Expr x) -> Text.pack left <> x <> Text.pack right)
