@@ -4,24 +4,7 @@ import os.path
 import json
 from queue import PriorityQueue
 
-DEBUG_IO = True
-# DEBUG_IO = False
-
-def text_command(args):
-    """Run a shell command, return its stdout as a String or throw an exception if it fails."""
-    if DEBUG_IO:
-        print("Running:", " ".join(args))
-
-    try:
-        result = subprocess.run(args, text=True, check=True,
-                                stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-        if DEBUG_IO:
-            print("\t ..returned.")
-        stdout = result.stdout.strip()
-        return stdout
-    except subprocess.CalledProcessError as exc:
-        sys.exit("Error in `mstan`: \"" + exc.output.strip() + "\"")
-
+from model_graph import *
 
 class ModelEvaluator:
     def __init__(self, dataFile):
@@ -33,54 +16,6 @@ class ModelEvaluator:
         return float(stdout_result.split('\n')[-1].strip())
 
         # return float(text_command(["bash", "./score.sh", modelPath]))
-
-model_dir = "temp-models/"
-
-class ModelGraph:
-    def __init__(self, modularStanFile):
-        self.modularStanFile = modularStanFile
-
-        # The model name without directory or extension
-        filename = os.path.basename(modularStanFile)
-        withoutStan, stan = os.path.splitext(filename)
-        withoutM, m = os.path.splitext(withoutStan)
-        self.modularStanFileBasename = withoutM if stan == ".stan" and m == ".m" else filename
-
-    def execCommand(self, args):
-        """Execute a command on this graph, given arguments to the `mstan` API"""
-        return text_command(["mstan", "-f", self.modularStanFile] + args)
-
-    def getConcreteModel(self, modelID):
-        """Build a concrete Stan program from a model ID and return its filepath."""
-        outFile = model_dir + self.modularStanFileBasename + "_" + modelID + ".stan"
-        self.execCommand(["-o", outFile, "concrete-model", "-s", modelID])
-        return outFile
-
-    def getModelNeighbors(self, modelID):
-        """Return a list of the models that neighbor the given model in the model graph"""
-        unparsedNeighbors = self.execCommand(["model-neighbors", "-s", modelID])
-        return list(filter(lambda s: s, unparsedNeighbors.split('\n')))
-
-    def getFirstModel(self):
-        """Get an arbitrary model ID from the model graph"""
-        return self.execCommand(["any-model"])
-
-def modelGraphTest(modelGraph, modelEvaluator, firstModel = None):
-    """Print out some example usage of the model graph"""
-    print("Model graph example:")
-
-    if not firstModel:
-        firstModel = modelGraph.getFirstModel()
-    print("\tFIRST MODEL ID:\n\t\t", firstModel)
-
-    concrete = modelGraph.getConcreteModel(firstModel)
-    print("\tCONCRETE FILEPATH:\n\t\t", concrete)
-
-    neighbors = modelGraph.getModelNeighbors(firstModel)
-    print("\tNEIGHBORS:\n\t\t", "\n\t\t ".join(neighbors))
-
-    score = modelEvaluator.score(concrete)
-    print("\tSCORE:\n\t\t", score)
 
 def modelSearch(modelGraph, modelEvaluator, firstModel = None, exhaustive=False):
     """Return a model ID from the given model graph that scores well on the given model evaluator"""
@@ -139,20 +74,14 @@ def modelSearch(modelGraph, modelEvaluator, firstModel = None, exhaustive=False)
     # Return path, dict of scores
     return maxModelPath, scored
 
-def id_to_dict(modelID):
-    return {a:b for [a,b] in [pair.split(':') for pair in modelID.split(',')]}
-
-def id_to_notes_id(modelID):
-    return json.dumps(id_to_dict(modelID))
-
 if __name__ == "__main__":
     # The program was called as an executable
 
-    defaultData = "test-data.r"
-    defaultProgram = "examples/gq-concatenation.m.stan"
+    defaultData = "examples/bernoulli_data.json"
+    defaultProgram = "examples/bernoulli.m.stan"
 
     if len(sys.argv) < 2:
-        print("Expected arguments: [modular stan file] [data file path] (notes file output)")
+        print("Expected arguments: [modular stan file] [data file path] (notes file output) (start model ID)")
         print("Using defaults.")
 
     modularStanProgram = sys.argv[1] if len(sys.argv) > 1 else defaultProgram

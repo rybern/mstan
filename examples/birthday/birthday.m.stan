@@ -1,3 +1,4 @@
+// Discussed at https://avehtari.github.io/casestudies/Birthdays/birthdays.html
 functions {
   vector diagSPD_EQ(real alpha, real rho, real L, int M) {
     return sqrt((alpha^2) * sqrt(2*pi()) * rho * exp(-0.5*(rho*pi()/2/L)^2 * linspaced_vector(M, 1, M)^2));
@@ -23,7 +24,6 @@ functions {
     return PHI;
   }
 }
-
 data {
   int<lower=1> N;      // number of observations
   vector[N] x;         // univariate covariate
@@ -53,7 +53,6 @@ transformed data {
 model {
   yn ~ Regression(xn);
 }
-
 module "glm" Regression(yn | xn) {
   transformed data {
     int basis_size =
@@ -89,7 +88,6 @@ module "glm" Regression(yn | xn) {
                                 SeasonalTrend.Weights()),
                      sigma);
 }
-
 module "yes" LongTermTrend {
   parameters {
     vector[M_f1] beta_f1;         // the basis functions coefficients
@@ -118,7 +116,6 @@ module "yes" LongTermTrend {
     return (intercept_offset + PHI_f1 * (diagSPD_f1 .* beta_f1));
   }
 }
-
 module "no" LongTermTrend {
   BasisTransform() {
     return rep_matrix(0, N, 0);
@@ -133,7 +130,6 @@ module "no" LongTermTrend {
     return rep_vector(0, N);
   }
 }
-
 module "yes" SeasonalTrend {
   parameters {
     vector[2*J_f2] beta_f2;       // the basis functions coefficients for f2
@@ -161,7 +157,6 @@ module "yes" SeasonalTrend {
     return (PHI_f2 * (diagSPD_f2 .* beta_f2));
   }
 }
-
 module "no" SeasonalTrend {
   BasisTransform() {
     return rep_matrix(0, N, 0);
@@ -176,7 +171,6 @@ module "no" SeasonalTrend {
     return rep_vector(0, N);
   }
 }
-
 module "yes" DayOfWeekTrend() {
   parameters {
     vector[6] beta_f3;
@@ -187,11 +181,9 @@ module "yes" DayOfWeekTrend() {
   vector[7] f_day_of_week = append_row(0, beta_f3);
   return DayOfWeekWeights() .* f_day_of_week[day_of_week];
 }
-
 module "no" DayOfWeekTrend() {
   return rep_vector(0, N);
 }
-
 module "weighted" DayOfWeekWeights() {
   transformed data {
     real L_g3 = c_g3 * max(xn);
@@ -213,16 +205,11 @@ module "weighted" DayOfWeekWeights() {
   }
   return exp_g3;
 }
-
 module "uniform" DayOfWeekWeights() {
   return rep_vector(1, N);
 }
-
 module "yes" DayOfYearTrend() {
   parameters {
-    // In earlier models:
-    // multiplier = sqrt( (slab_scale * sqrt(caux_f4))^2 * square(lambda_f4) ./ ((slab_scale * sqrt(caux_f4))^2 + tau_f4^2*square(lambda_f4)))*tau_f4
-    // Could be done with module application in whole program
     vector[366] beta_f4;
   }
   model {
@@ -231,7 +218,6 @@ module "yes" DayOfYearTrend() {
   }
   return beta_f4[day_of_year];
 }
-
 module "yes" DayOfYearHeirarchicalVariance(beta_f4) {
   transformed data {
     real nu_global = 1;
@@ -252,10 +238,7 @@ module "yes" DayOfYearHeirarchicalVariance(beta_f4) {
   real c_f4 = slab_scale * sqrt(caux_f4);
   beta_f4 ~ normal(0, sqrt( c_f4^2 * square(lambda_f4) ./ (c_f4^2 + tau_f4^2*square(lambda_f4)))*tau_f4);
 }
-
-module "no" DayOfYearHeirarchicalVariance(beta_f4) {
-}
-
+module "no" DayOfYearHeirarchicalVariance(beta_f4) { }
 module "yes" DayOfYearNormalVariance(beta_f4) {
   parameters {
     real<lower=0> sigma_f4;
@@ -265,10 +248,7 @@ module "yes" DayOfYearNormalVariance(beta_f4) {
   }
   beta_f4 ~ normal(0, sigma_f4);
 }
-
-module "no" DayOfYearNormalVariance(beta_f4) {
-}
-
+module "no" DayOfYearNormalVariance(beta_f4) { }
 module "no" DayOfYearTrend() {
   return rep_vector(0, N);
 }
@@ -286,8 +266,6 @@ module "yes" HolidayTrend {
     intercept[thanksgiving_days] = rep_vector(beta_f5[3], size(thanksgiving_days));
   }
 }
-
 module "no" HolidayTrend {
-  UpdateIntercept(intercept) {
-  }
+  UpdateIntercept(intercept) { }
 }

@@ -22,6 +22,11 @@ import           Types
 -- Concrete program generation
 ------
 
+data ConcretizeError = ErrorMissingSelection ImplName SigName
+                     | ErrorModuleShouldReturn Text FullSigName
+                     | ErrorModuleShouldntReturn Text FullSigName
+                     | ErrorArgumentsMismatch
+
 -- Constraint:
 -- The selection map is total for all signatures in the program
 selectModules :: ModularProgram -> Map SigName ImplName -> Program ConcreteCode

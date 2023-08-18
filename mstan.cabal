@@ -14,6 +14,7 @@ extra-source-files:  README.md
 library
   exposed-modules:     Indent,
                        ModuleTree,
+                       SemanticChecking,
                        ModelGraph,
                        ConcreteProgram,
                        Parsing,

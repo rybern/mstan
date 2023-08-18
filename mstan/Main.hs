@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import           Data.Text                      ( Text )
@@ -5,6 +6,8 @@ import qualified Data.Text                     as Text
 import qualified Data.Text.IO                  as Text
 import qualified Data.Set                      as Set
 import Control.Monad
+import Data.Maybe
+import System.IO
 
 import Parsing
 import Printing
@@ -23,20 +26,26 @@ main = do
   execOptions options
 
 execOptions :: RunOptions -> IO ()
-execOptions (RunOptions file debugParse maybeOutFile command) = do
-    program <- Parsing.readModularProgram file
-    when (debugParse == DebugParse) $ do
-      putStrLn "============== Parsed program: ==============="
-      printModularProgram program
-      -- putStrLn "============== Model graph:      ==============="
-      -- print $ modelGraph program
-      putStrLn "============== Modular tree:   ==============="
-      printModularTree program
-      putStrLn "============== Results:        ==============="
-    result <- Text.unlines <$> execCommand program command
-    case maybeOutFile of
-      Nothing -> Text.putStr result
-      Just f -> Text.writeFile f result
+execOptions (RunOptions file maybeSubgraph debugParse maybeOutFile command) =
+    Parsing.readModularProgram file >>= \case
+      Left errorReport -> mapM_ (hPutStrLn stderr) (showProgramError errorReport)
+      Right program -> do
+        let subprogram = maybe program (subgraph program) maybeSubgraph
+        when (debugParse == DebugParse) $ do
+          putStrLn "============== Parsed program: ==============="
+          printModularProgram program
+          -- putStrLn "============== Model graph:      ==============="
+          -- print $ modelGraph program
+          putStrLn "============== Modular tree:   ==============="
+          printModularTree program
+          when (isJust maybeSubgraph) $ do
+            putStrLn "============== Modular subtree:   ==============="
+            printModularTree subprogram
+          putStrLn "============== Results:        ==============="
+        result <- Text.unlines <$> execCommand subprogram command
+        case maybeOutFile of
+          Nothing -> Text.putStr result
+          Just f -> Text.writeFile f result
 
 execCommand :: ModularProgram -> ExecCommand -> IO [Text]
 execCommand prog (GetNeighbors selection) = return $

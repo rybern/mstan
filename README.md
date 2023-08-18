@@ -197,7 +197,7 @@ Winner:
 2 expands
 ```
 
-The search selected the model with ID `Model:model8rhs`. To get the concrete Stan program with this `ID`, run `mstan exec -f examples/birthday/birthday.m.stan get-model -s Model:model8rhs`.
+The search selected the model with ID `Model:model8rhs`. To get the concrete Stan program with this `ID`, run `mstan exec -f examples/birthday/birthday-trivial-translation.m.stan get-model -s Model:model8rhs`.
 
 ## Troubleshooting
  * To see the command line calls that are being made to `elpd.R` and `mstan`, set `DEBUG_IO` in `graph_search.py` to `True`

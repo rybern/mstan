@@ -6,6 +6,7 @@ module ModelGraph (
   , allSelections
   , modelNeighbors
   , firstSelection
+  , subgraph
   ) where
 
 import           Data.List                (foldl1')
@@ -207,3 +208,9 @@ modelNeighbors p path =
 modelNeighbors' :: ModularProgram -> Selection -> Set Selection
 modelNeighbors' p path =
   Set.filter (isJust . singleSiblingDelta path) . unNodeSet $ buildGraph p
+
+subgraph :: ModularProgram -> Selection -> ModularProgram
+subgraph p s = p { implementations = filter inSelection (implementations p) }
+  where inSelection impl = case Map.lookup (implSignature impl) s of
+          Nothing -> True
+          Just implName' -> implName impl == implName'

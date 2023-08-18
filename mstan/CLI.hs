@@ -13,6 +13,7 @@ data DebugParse = Silent | DebugParse deriving (Show, Eq)
 
 data RunOptions = RunOptions {
     inFile :: MStanFile
+  , maybeSubgraph :: Maybe Selection
   , debugParse :: DebugParse
   , outFile:: Maybe FilePath
   , command :: ExecCommand
@@ -33,7 +34,7 @@ parseOptions = execParser
   (info (parserOptions <**> helper)
     (fullDesc <> progDesc "Execute model network command"))
   where parserOptions = RunOptions <$>
-          parserMStanFile <*> parserDebugParse <*> parserOutputFile <*> parserExecCommand
+          parserMStanFile <*> parserSubgraph <*> parserDebugParse <*> parserOutputFile <*> parserExecCommand
 
 parseSelection :: String -> Selection
 parseSelection s = case Parsing.parseSelections (Text.pack s) of
@@ -50,6 +51,12 @@ parserMStanFile :: Parser MStanFile
 parserMStanFile = MStanFile <$> strOption
     (long "modular-stan-file" <> short 'f' <> metavar "FILE" <> help
         "File path of the input modular Stan file"
+    )
+
+parserSubgraph :: Parser (Maybe Selection)
+parserSubgraph = (\s -> if null s then Nothing else Just (parseSelection s)) <$> strOption
+    (long "partial-selection" <> value "" <> metavar "SELECTION_STRING" <> help
+        "Partial selection to specify a subgraph to operate on"
     )
 
 parserDebugParse :: Parser DebugParse

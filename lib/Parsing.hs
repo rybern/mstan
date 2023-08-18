@@ -18,6 +18,8 @@ import qualified Data.Text.IO                  as Text
 import           Data.Function
 import           Data.Char
 
+
+import           SemanticChecking
 import           Types
 import           Prelude                 hiding ( takeWhile )
 import Indent
@@ -416,13 +418,46 @@ parserModularProgram = do
             }
         }
 
-readModularProgram :: MStanFile -> IO ModularProgram
+readModularProgram :: MStanFile -> IO (Either ProgramError ModularProgram)
 readModularProgram = (parseModularProgram <$>) . Text.readFile . unMStanFile
 
-parseModularProgram :: Text -> ModularProgram
-parseModularProgram t = case parseOnly parserModularProgram t of
-    Left  remainder -> error $ "\"" ++ remainder ++ "\""
-    Right prog      -> prog
+data ProgramError = SyntaxError {
+  linesRemaining :: Int
+  , contexts :: [String]
+  , description :: String
+  }
+  | ErrorUnfinishedParse
+  | SemanticError [SemanticError]
+             deriving Show
+
+showProgramError :: ProgramError -> [String]
+showProgramError ErrorUnfinishedParse = ["Unexpected extra symbols; expected end of input"]
+showProgramError (SyntaxError {..}) = ["Error " ++ show linesRemaining ++ " from end of input:"
+                                      , "  " ++ description
+                                      , "at points: "] ++ contexts
+showProgramError (SemanticError es) = concatMap showSemanticError es
+
+-- parseModularProgram :: Text -> Either ErrorReport ModularProgram
+-- parseModularProgram t = case parseOnly parserModularProgram t of
+--     Left description ->
+--       Left $ SyntaxError 0 [] description
+--     Right prog      -> Right prog
+
+parseModularProgram :: Text -> Either ProgramError ModularProgram
+parseModularProgram t = case parse parserModularProgram t of
+    Fail r c d-> handleFail r c d
+    Partial f -> case f mempty of 
+      Fail r c d-> handleFail r c d
+      Partial _ -> error "Should not find partial twice"
+      Done r p      -> handleDone r p
+    -- Partial _ -> Left $ ErrorDidNotFinish
+    Done r p      -> handleDone r p
+  where handleFail remainder contexts description = 
+          Left $ SyntaxError (length . Text.lines $ remainder) contexts description
+        handleDone "" prog = case (semanticCheck prog) of
+          [] -> Right prog
+          errs -> Left (SemanticError errs)
+        handleDone _ _ = Left ErrorUnfinishedParse
 
 {-
 Old parser test code. Should turn into a test suite
