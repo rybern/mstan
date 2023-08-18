@@ -68,8 +68,8 @@ parserSigLine (FullSigName sigName) = choice
       _ <- char ';'
       return (args, Nothing)
   , do
-      -- left  <- manyTill anyChar $ (satisfy isVariableChar *> string sigName)
-      left  <- manyTill anyChar $ (satisfy isVariableChar *> string sigName)
+      -- left  <- manyTill anyChar $ (string sigName)
+      left  <- manyTill anyChar $ (satisfy (not . isVariableChar) *> string sigName)
       skipSpace
       args  <- parserArgs
       right <- many' anyChar
